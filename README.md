@@ -56,11 +56,12 @@ Returns nothing. Required for decoded configuration data validation.
 
 Returns (CBOR encoded) CORECONF configuration data.
 
-### `cc.coreconf_to_libconf(coreconf_data)`
+### `cc.coreconf_to_libconf(coreconf_data, save_loc)`
 
 - `coreconf_data`: (CBOR encoded) CORECONF configuration data.
+- `save_loc`: File name (location) for .cfg file to be saved.
 
-Returns the decoded configuration data in `libconf` format. Requires a defined model description file.
+Returns nothing. Saves the decoded configuration data in `libconf` format in the specified save location. Requires a defined model description file to validate the decoded configuration data.
 
 ### `cc.toCORECONF(config_data)` 
 
