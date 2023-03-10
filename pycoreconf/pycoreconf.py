@@ -1,6 +1,6 @@
 # CORECONF Conversion library
 
-from .sid import getSIDsAndTypes
+from .sid import ModelSID
 import json
 import base64
 import cbor2 as cbor
@@ -14,9 +14,13 @@ policy_t = {
 
 policy_t_dict = {v: k for k, v in policy_t.items()}
 
-yang_ietf_modules_paths = ["."]
-default_model_sid_file = "model.sid"
-model_description_file = None
+class CCModel(ModelSID):
+    def __init__(self, 
+                 sid_file, 
+                 model_description_file=None):
+        self.model_description_file = model_description_file
+        self.yang_ietf_modules_paths = ["."]
+        ModelSID.__init__(self, sid_file)
 
 def add_modules_path(path):
     """
