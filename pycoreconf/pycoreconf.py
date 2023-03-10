@@ -21,7 +21,6 @@ class CCModel(ModelSID):
         self.model_description_file = model_description_file
         self.yang_ietf_modules_paths = ["."]
         ModelSID.__init__(self, sid_file)
-        self.sids, self.types = ModelSID.getSIDsAndTypes(self) #req. ltn22/pyang
 
     def add_modules_path(self, path):
         """

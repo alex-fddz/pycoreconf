@@ -7,8 +7,8 @@ class ModelSID:
 
     def __init__(self, sid_file):
         self.sid_file = sid_file
-        self.sids = None
-        self.types = None
+        self.sids, self.types = self.getSIDsAndTypes() #req. ltn22/pyang
+        self.ids = {v: k for k, v in self.sids.items()} # {sid:id}
 
     def getSIDsAndTypes(self):
         """
