@@ -15,7 +15,7 @@ From source:
 ```
 git clone https://github.com/alex-fddz/pycoreconf.git
 cd pycoreconf
-python setup.py install   # this might require root access
+python3 setup.py install   # this might require root access
 ```
 
 ### To uninstall
