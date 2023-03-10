@@ -21,35 +21,18 @@ class CCModel(ModelSID):
         self.model_description_file = model_description_file
         self.yang_ietf_modules_paths = ["."]
         ModelSID.__init__(self, sid_file)
+        self.sids, self.types = ModelSID.getSIDsAndTypes(self) #req. ltn22/pyang
 
-def add_modules_path(path):
-    """
-    Config / Add a path or list of paths to yang ietf modules location.
-    """
-    if type(path) is str:
-        yang_ietf_modules_paths.append(path)
-    elif type(path) is list:
-        yang_ietf_modules_paths.extend(path)
-    else:
-        raise TypeError("Can only add path string or list of paths.")
-
-def set_sid_file(sid_file):
-    """
-    Config / Set default model SID file.
-    """
-    global default_model_sid_file
-    # Check file exists
-    with open(sid_file, 'r') as f:
-        default_model_sid_file = sid_file
-
-def set_description_file(desc_file):
-    """
-    Config / Set default model description file.
-    """
-    global model_description_file
-    # Check file exists
-    with open(desc_file, 'r') as f:
-        model_description_file = desc_file
+    def add_modules_path(self, path):
+        """
+        Config / Add a path or list of paths to yang ietf modules location.
+        """
+        if type(path) is str:
+            self.yang_ietf_modules_paths.append(path)
+        elif type(path) is list:
+            self.yang_ietf_modules_paths.extend(path)
+        else:
+            raise TypeError("Can only add path string or list of paths.")
 
 def lookupSID(obj, path, parent=0):
     """
@@ -152,7 +135,7 @@ def lookupIdentifier(obj, delta=0, path="/"):
             print(path, dtype)
             return obj
 
-def toJSON(data):
+def toJSON(data): # toPyDict
     """
     Convert CORECONF/CBOR data to JSON (python dictionary).
     """
@@ -174,6 +157,7 @@ def toLibconf(cfg_dict):
 def validateJSON(config, desc_file, modules_paths=["."]):
     """
     Validate JSON config against module specification.
+    Requires model description file and configured modules paths.
     """
     if desc_file is None:
         print("No model description file provided. Skipping validation.")
@@ -291,3 +275,24 @@ def coreconf_to_libconf(cbor_data, save_loc, sid_file=None):
     with open(save_loc, "w") as f:
         f.write(cfg)
     print("Saved config to", save_loc)
+
+
+def set_sid_file(sid_file):
+    """
+    DEPRECATED.
+    Config / Set default model SID file.
+    """
+    global default_model_sid_file
+    # Check file exists
+    with open(sid_file, 'r') as f:
+        default_model_sid_file = sid_file
+
+def set_description_file(desc_file):
+    """
+    DEPRECATED.
+    Config / Set default model description file.
+    """
+    global model_description_file
+    # Check file exists
+    with open(desc_file, 'r') as f:
+        model_description_file = desc_file

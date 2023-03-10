@@ -7,25 +7,8 @@ class ModelSID:
 
     def __init__(self, sid_file):
         self.sid_file = sid_file
-        
-
-    def getIdentifiers(self):
-        """
-        Read SID file and return { sid : identifier } dictionary.
-        """
-        # Read the contents of the sid/json file
-        f = open(self.sid_file, "r")
-        obj = json.load(f)
-        f.close()
-
-        # Get items & map identifier : sid
-        ids = {} # init
-        items = obj["items"] # list
-        for item in items:
-            ids[item["sid"]] = item["identifier"]
-
-        return ids
-
+        self.sids = None
+        self.types = None
 
     def getSIDsAndTypes(self):
         """
@@ -45,8 +28,25 @@ class ModelSID:
             if "type" in item.keys():
                 types[item["identifier"]] = item["type"]
 
-
         return sids, types
+
+
+    def getIdentifiers(self):
+        """
+        Read SID file and return { sid : identifier } dictionary.
+        """
+        # Read the contents of the sid/json file
+        f = open(self.sid_file, "r")
+        obj = json.load(f)
+        f.close()
+
+        # Get items & map identifier : sid
+        ids = {} # init
+        items = obj["items"] # list
+        for item in items:
+            ids[item["sid"]] = item["identifier"]
+
+        return ids
 
     def getSIDs(self):
         """
