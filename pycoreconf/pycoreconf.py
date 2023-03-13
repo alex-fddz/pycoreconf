@@ -79,68 +79,69 @@ class CORECONFModel(ModelSID):
                 print(path, dtype)
                 return obj
 
-    def toCORECONF(self, data, cbor_dump=True):
+    def toCORECONF(self, py_data, cbor_dump=True):
         """
-        Convert JSON data to CORECONF.
+        Convert Python Dictionary data to CORECONF.
         """
-        cc = self.lookupSID(data)
+        cc = self.lookupSID(py_data)
         return cbor.dumps(cc) if cbor_dump else cc
 
+    def lookupIdentifier(self, obj, delta=0, path="/"):
+        """
+        Look up leaf identifier for *obj* SID value. Dive in if it's a dictionary or a list of elements.
+        """
 
-def lookupIdentifier(obj, delta=0, path="/"):
-    """
-    Look up leaf identifier for *obj* SID value. Dive in if it's a dictionary or a list of elements.
-    """
+        if type(obj) is dict:
+            json_dict = {}
+            for k, v in obj.items():
+                sid = k + delta             # get full identifier path
+                identifier = self.ids[sid]       # look for SID value
 
-    if type(obj) is dict:
-        json_dict = {}
-        for k, v in obj.items():
-            sid = k + delta             # get full identifier path
-            identifier = ids[sid]       # look for SID value
+                value = self.lookupIdentifier(v, sid, identifier)    # dive in
 
-            value = lookupIdentifier(v, sid, identifier)    # dive in
+                json_dict[identifier.split("/")[-1]] = value
+            return json_dict
 
-            json_dict[identifier.split("/")[-1]] = value
-        return json_dict
+        elif type(obj) is list:
+            json_list = []
+            for e in obj:   # get each element of the list
+                value = self.lookupIdentifier(e, delta, path)    # dive in
+                json_list.append(value)
+            return json_list
 
-    elif type(obj) is list:
-        json_list = []
-        for e in obj:   # get each element of the list
-            value = lookupIdentifier(e, delta, path)    # dive in
-            json_list.append(value)
-        return json_list
-
-    # Leaves:
-    else:
-        # get leaf data type according to model
-        # and cast to correct data type.
-        dtype = types[path]
-
-        if dtype == "string":
-            return str(obj)
-        elif dtype == "uint32":
-            return int(obj)
-        elif dtype == "binary":
-            return obj.decode()
-            # enc = base64.b64encode(obj)
-            # return base64.b64decode(enc)
-        elif dtype == "inet:uri":
-            return str(obj)
-        elif dtype == "policy-t":
-            # return obj
-            return policy_t_dict[obj]
+        # Leaves:
         else:
-            print(" X unrecognized obj type.")
-            print(path, dtype)
-            return obj
+            # get leaf data type according to model
+            # and cast to correct data type.
+            dtype = self.types[path]
 
-def toJSON(data): # toPyDict
-    """
-    Convert CORECONF/CBOR data to JSON (python dictionary).
-    """
-    cfg = lookupIdentifier(data) # dict
-    jsn = json.dumps(cfg) # json
-    return cfg
+            if dtype == "string":
+                return str(obj)
+            elif dtype == "uint32":
+                return int(obj)
+            elif dtype == "binary":
+                return obj.decode()
+                # enc = base64.b64encode(obj)
+                # return base64.b64decode(enc)
+            elif dtype == "inet:uri":
+                return str(obj)
+            elif dtype == "policy-t":
+                # return obj
+                return policy_t_dict[obj]
+            else:
+                print(" X unrecognized obj type.")
+                print(path, dtype)
+                return obj
+
+    def toPyDict(self, cbor_data): 
+        """
+        Convert CORECONF (CBOR) data to Python Dictionary.
+        """
+        data = cbor.loads(cbor_data)
+        pyd = self.lookupIdentifier(data)
+        # jsn = json.dumps(pyd) # json?
+        return pyd
+
 
 def toLibconf(cfg_dict):
     """
