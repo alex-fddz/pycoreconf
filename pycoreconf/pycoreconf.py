@@ -142,6 +142,22 @@ class CORECONFModel(ModelSID):
         # jsn = json.dumps(pyd) # json?
         return pyd
 
+    def validateConfig(self, config):
+        """
+        Validate PyDict config against module specification.
+        Requires model description file and configured yang/ietf modules paths.
+        """
+        if self.model_description_file is None:
+            # print("No model description file specified. Skipping validation.")
+            return False
+        from yangson import DataModel
+        dm = DataModel.from_file(self.model_description_file, 
+            self.yang_ietf_modules_paths)
+        data = dm.from_raw(config)
+        data.validate()
+        # print("Config validation OK.")
+        return True
+
 
 def toLibconf(cfg_dict):
     """
@@ -153,22 +169,6 @@ def toLibconf(cfg_dict):
     # Convert to libconf
     cfg_lc = eval(cfg_str) # convert back to dict
     return libconf.dumps(cfg_lc)
-
-def validateJSON(config, desc_file, modules_paths=["."]):
-    """
-    Validate JSON config against module specification.
-    Requires model description file and configured modules paths.
-    """
-    if desc_file is None:
-        print("No model description file provided. Skipping validation.")
-        return
-    from yangson import DataModel
-    dm = DataModel.from_file(desc_file, 
-        modules_paths)
-    data = dm.from_raw(config)
-    data.validate()
-    print("Config validation OK.")
-
 
 def js2cc(json_file, sid_file=None):
     """
