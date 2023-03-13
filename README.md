@@ -15,7 +15,7 @@ From source:
 ```
 git clone https://github.com/alex-fddz/pycoreconf.git
 cd pycoreconf
-python setup.py install   # this might require root access
+python3 setup.py install    # this might require root access
 ```
 
 ### To uninstall
@@ -24,31 +24,78 @@ python setup.py install   # this might require root access
 pip uninstall pycoreconf
 ```
 
+## Requirements & Setup
+
+- [ltn22/pyang](https://github.com/ltn22/pyang/) module. Allows the generation of the model's SID file including leaves' data types. Provides YANG IETF modules necessary for config validation.
+- The following Python modules need to be installed.
+
+```
+pip install cbor2, json, base64
+```
+
+- SID file generated as follows (see `tools/gen_sid.sh`):
+
+```
+pyang --sid-generate-file $ENTRY:$SIZE --sid-list --sid-extention $YANG -p $MODULES
+```
+Where:
+- `$ENTRY`: Entry point of allocated YANG SID Range.
+- `$SIZE`: Size of allocated YANG SID Range.
+- `$YANG`: .yang data model file.
+- `$MODULES`: path to yang modules (pyang/modules/)
+
+> *Note*: The range of 60,000 to 99,999 (size 40,000) is reserved for experimental YANG modules. The size of the SID range allocated for a YANG module is recommended to be a multiple of 50 and to be at least 33% above the current number of YANG items.
+
+- A YANG data model description JSON file (see `samples/validation/description.json`).
+
 ## API and Usage
 
 Import the module with:
 
 ```
-import pycoreconf as cc
+import pycoreconf
 ```
 
-### `cc.set_sid_file(sid_file)`
+### `ccm = pycoreconf.CORECONFModel(sid_file, model_description_file=None)`
 
-- `sid_file`: Path to model's .sid file
+Create a CORECONF Model object with an associated YANG SID file.
 
-Returns nothing. All other methods depend on this configuration. 
+- `sid_file`: Path to model's .sid file. Generated using [ltn22/pyang](https://github.com/ltn22/pyang/) module.
+- `model_description_file`: Optional model description file. Used for config validation.
 
-### `cc.add_modules_path(ietf_modules_loc)`
+### `ccm.add_modules_path(ietf_modules_loc)`
 
 - `ietf_modules_loc`: Path or list of paths where IETF and other modules used in the YANG model may be found.
 
 Returns nothing. Required for decoded configuration data validation.
 
-### `cc.set_model_description_file(desc_file)`
+### `ccm.toCORECONF(config_data, cbor_dump=True)` 
 
-- `desc_file`: YANG data model description JSON file (manually created).
+- `config_data`: Python dictionary holding configuration data.
+- `cbor_dump`: If set to `False`, returns a CORECONF-equivalent Python dictionary instead of CBOR-encoded.
 
-Returns nothing. Required for decoded configuration data validation.
+Returns (CBOR encoded) CORECONF configuration data.
+
+### `ccm.toPyDict(coreconf_data)`
+
+- `coreconf_data`: (CBOR encoded) CORECONF configuration data.
+
+Returns decoded configuration data as a Python Dictionary.
+
+### `ccm.validateConfig(config_data)`
+
+- `config_data`: Python dictionary holding configuration data.
+
+Returns `True` if input config data is valid according to the YANG data model. Returns `False` if the model's description file is not specified (unable to validate).
+
+---
+**The following methods have been deprecated / are not yet available**
+
+### `cc.set_sid_file(sid_file)`
+Config / Set default model SID file. DEPRECATED.
+
+### `cc.set_description_file(desc_file)`
+Config / Set default model description file. DEPRECATED.
 
 ### `cc.json_to_coreconf(json_file)`
 
@@ -62,18 +109,6 @@ Returns (CBOR encoded) CORECONF configuration data.
 - `save_loc`: File name (location) for .cfg file to be saved.
 
 Returns nothing. Saves the decoded configuration data in `libconf` format in the specified save location. Requires a defined model description file to validate the decoded configuration data.
-
-### `cc.toCORECONF(config_data)` 
-
-- `config_data`: Python dictionary holding configuration data.
-
-Returns (CBOR encoded) CORECONF configuration data.
-
-### `cc.toJSON(coreconf_data)`
-
-- `coreconf_data`: (CBOR encoded) CORECONF configuration data.
-
-Returns decoded configuration data as a Python Dictionary.
 
 ### `cc.js2cc(json_file, sid_file='model.sid')`
 
