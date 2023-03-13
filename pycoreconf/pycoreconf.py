@@ -14,7 +14,7 @@ policy_t = {
 
 policy_t_dict = {v: k for k, v in policy_t.items()}
 
-class CCModel(ModelSID):
+class CORECONFModel(ModelSID):
     def __init__(self, 
                  sid_file, 
                  model_description_file=None):
@@ -33,58 +33,58 @@ class CCModel(ModelSID):
         else:
             raise TypeError("Can only add path string or list of paths.")
 
-def lookupSID(obj, path, parent=0):
-    """
-    Look up SID for *obj* under *path*. Dive in if it's a dictionary or a list of elements.
-    """
+    def lookupSID(self, obj, path="/", parent=0):
+        """
+        Look up SID for *obj* under *path*. Dive in if it's a dictionary or a list of elements.
+        """
 
-    if type(obj) is dict:
-        json_dict = {}
-        for k, v in obj.items():
-            element = path + k      # get full identifier path
-            key = sids[element]     # look for SID value
+        if type(obj) is dict:
+            json_dict = {}
+            for k, v in obj.items():
+                element = path + k      # get full identifier path
+                key = self.sids[element]     # look for SID value
 
-            value = lookupSID(v, element+"/", key)  # dive in
+                value = self.lookupSID(v, element+"/", key)  # dive in
 
-            json_dict[key-parent] = value
-        return json_dict
+                json_dict[key-parent] = value
+            return json_dict
 
-    elif type(obj) is list:
-        json_list = []
-        for e in obj:   # get each element of the list
-            value = lookupSID(e, path, parent)  # dive in
-            json_list.append(value)
-        return json_list
+        elif type(obj) is list:
+            json_list = []
+            for e in obj:   # get each element of the list
+                value = self.lookupSID(e, path, parent)  # dive in
+                json_list.append(value)
+            return json_list
 
-    # Leaves:
-    else:
-        # get leaf data type according to model
-        # and cast to correct data type.
-        dtype = types[path[:-1]]
-
-        if dtype == "string":
-            return str(obj)
-        elif dtype == "uint32":
-            return int(obj)
-        elif dtype == "binary":
-            dec = base64.b64decode(obj)
-            return base64.b64encode(dec)
-        elif dtype == "inet:uri":
-            return str(obj)
-        elif dtype == "policy-t":
-            # return obj
-            return policy_t[obj]
+        # Leaves:
         else:
-            print(" X unrecognized obj type.")
-            print(path, dtype)
-            return obj
+            # get leaf data type according to model
+            # and cast to correct data type.
+            dtype = self.types[path[:-1]]
 
-def toCORECONF(data):
-    """
-    Convert JSON data to CORECONF.
-    """
-    cc = lookupSID(data, "/")
-    return cc
+            if dtype == "string":
+                return str(obj)
+            elif dtype == "uint32":
+                return int(obj)
+            elif dtype == "binary":
+                dec = base64.b64decode(obj)
+                return base64.b64encode(dec)
+            elif dtype == "inet:uri":
+                return str(obj)
+            elif dtype == "policy-t":
+                # return obj
+                return policy_t[obj]
+            else:
+                print(" X unrecognized obj type.")
+                print(path, dtype)
+                return obj
+
+    def toCORECONF(self, data, cbor_dump=True):
+        """
+        Convert JSON data to CORECONF.
+        """
+        cc = self.lookupSID(data)
+        return cbor.dumps(cc) if cbor_dump else cc
 
 
 def lookupIdentifier(obj, delta=0, path="/"):
