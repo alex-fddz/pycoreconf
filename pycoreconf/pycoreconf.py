@@ -1,10 +1,12 @@
 # CORECONF Conversion library
 
+# https://realpython.com/documenting-python-code/
+
 from .sid import ModelSID
-import json
+# import json
 import base64
 import cbor2 as cbor
-import libconf
+# import libconf
 
 policy_t = {
     "protect" : 0,
@@ -32,6 +34,40 @@ class CORECONFModel(ModelSID):
             self.yang_ietf_modules_paths.extend(path)
         else:
             raise TypeError("Can only add path string or list of paths.")
+
+    def _castDataTypes(self, obj, dtype, encoding):
+        """
+        Cast leaf value to correct Python data type according to YANG data type.
+        """
+
+        if dtype == "string":
+            return str(obj)
+        elif dtype in ["int8", "int16", "int32", "int64",
+                        "uint8", "uint16", "uint32", "uint64"]:
+            return int(obj)
+        elif dtype == "decimal64":  # untested
+            return float(obj)
+        elif dtype == "binary":
+            if encoding: 
+                dec = base64.b64decode(obj)
+                return base64.b64encode(dec)
+            else: 
+                return obj.decode()
+                # enc = base64.b64encode(obj)
+                # return base64.b64decode(enc)
+        elif dtype == "boolean":    # untested
+            return True if obj == "true" else False
+        elif dtype == "inet:uri":
+            return str(obj)
+        elif dtype == "policy-t":
+            # return obj
+            if encoding:
+                return policy_t[obj]
+            else:
+                return policy_t_dict[obj]
+        else:
+            print("[X] Unrecognized obj type:", dtype)
+        return obj
 
     def lookupSID(self, obj, path="/", parent=0):
         """
@@ -61,23 +97,7 @@ class CORECONFModel(ModelSID):
             # get leaf data type according to model
             # and cast to correct data type.
             dtype = self.types[path[:-1]]
-
-            if dtype == "string":
-                return str(obj)
-            elif dtype == "uint32":
-                return int(obj)
-            elif dtype == "binary":
-                dec = base64.b64decode(obj)
-                return base64.b64encode(dec)
-            elif dtype == "inet:uri":
-                return str(obj)
-            elif dtype == "policy-t":
-                # return obj
-                return policy_t[obj]
-            else:
-                print(" X unrecognized obj type.")
-                print(path, dtype)
-                return obj
+            return self._castDataTypes(obj, dtype, encoding=True)
 
     def toCORECONF(self, py_data, cbor_dump=True):
         """
@@ -114,24 +134,7 @@ class CORECONFModel(ModelSID):
             # get leaf data type according to model
             # and cast to correct data type.
             dtype = self.types[path]
-
-            if dtype == "string":
-                return str(obj)
-            elif dtype == "uint32":
-                return int(obj)
-            elif dtype == "binary":
-                return obj.decode()
-                # enc = base64.b64encode(obj)
-                # return base64.b64decode(enc)
-            elif dtype == "inet:uri":
-                return str(obj)
-            elif dtype == "policy-t":
-                # return obj
-                return policy_t_dict[obj]
-            else:
-                print(" X unrecognized obj type.")
-                print(path, dtype)
-                return obj
+            return self._castDataTypes(obj, dtype, encoding=False)
 
     def toPyDict(self, cbor_data): 
         """
