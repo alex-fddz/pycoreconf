@@ -69,18 +69,21 @@ Create a CORECONF Model object with an associated YANG SID file.
 
 Returns nothing. Required for decoded configuration data validation.
 
-### `ccm.toCORECONF(config_data, cbor_dump=True)` 
+### `ccm.toCORECONF(config_json)` 
 
-- `config_data`: Python dictionary holding configuration data.
-- `cbor_dump`: If set to `False`, returns a CORECONF-equivalent Python dictionary instead of CBOR-encoded.
+- `config_json`: JSON object or file containing configuration data.
 
 Returns (CBOR encoded) CORECONF configuration data.
 
-### `ccm.toPyDict(coreconf_data)`
+### `ccm.toJSON(coreconf_data, return_pydict=False)`
 
 - `coreconf_data`: (CBOR encoded) CORECONF configuration data.
+- `return_pydict`: Return data as a Python dictionary instead (useful if doing further processing or conversions to other formats)
 
-Returns decoded configuration data as a Python Dictionary.
+Returns decoded configuration data as a JSON object (or Python dictionary). Validates config data if a model description file has been set.
+
+### Other methods
+---
 
 ### `ccm.validateConfig(config_data)`
 
@@ -88,39 +91,16 @@ Returns decoded configuration data as a Python Dictionary.
 
 Returns `True` if input config data is valid according to the YANG data model. Returns `False` if the model's description file is not specified (unable to validate).
 
----
-**The following methods have been deprecated / are not yet available**
+Config data is automatically validated during CORECONF/CBOR decoding.
 
-### `cc.set_sid_file(sid_file)`
-Config / Set default model SID file. DEPRECATED.
+### `ccm.lookupSID(config_pydict)`
 
-### `cc.set_description_file(desc_file)`
-Config / Set default model description file. DEPRECATED.
+- `config_pydict`: Python dictionary holding configuration data.
 
-### `cc.json_to_coreconf(json_file)`
+Returns a python dictionary with configuration keys/leaves substituted by their corresponding SIDs.
 
-- `json_file`: Path to JSON file holding the configuration data.
+### `ccm.lookupIdentifier(config_pydict)`
 
-Returns (CBOR encoded) CORECONF configuration data.
+- `config_pydict`: Python dictionary holding configuration data, with SID delta values as keys.
 
-### `cc.coreconf_to_libconf(coreconf_data, save_loc)`
-
-- `coreconf_data`: (CBOR encoded) CORECONF configuration data.
-- `save_loc`: File name (location) for .cfg file to be saved.
-
-Returns nothing. Saves the decoded configuration data in `libconf` format in the specified save location. Requires a defined model description file to validate the decoded configuration data.
-
-### `cc.js2cc(json_file, sid_file='model.sid')`
-
-- `json_file`: Path to JSON file holding the configuration data.
-- `sid_file` (Optional): Path to model's .sid file. Takes configured .sid file as default.
-
-Returns nothing. Writes CORECONF data in a .cbor file.
-
-### `cc.cc2cfg(coreconf_file, sid_file='model.sid')`
-
-- `coreconf_file`: Path to .cbor file holding the CORECONF data.
-- `sid_file` (Optional): Path to model's .sid file. Takes configured .sid file as default.
-
-Returns nothing. Writes decoded configuration data as a .cfg (libconf) file.
-
+Returns a python dictionary with SID delta keys substituted by their corresponding leaf identifiers.

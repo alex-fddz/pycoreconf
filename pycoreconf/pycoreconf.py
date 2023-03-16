@@ -3,10 +3,9 @@
 # https://realpython.com/documenting-python-code/
 
 from .sid import ModelSID
-# import json
+import json
 import base64
 import cbor2 as cbor
-# import libconf
 
 policy_t = {
     "protect" : 0,
@@ -99,12 +98,22 @@ class CORECONFModel(ModelSID):
             dtype = self.types[path[:-1]]
             return self._castDataTypes(obj, dtype, encoding=True)
 
-    def toCORECONF(self, py_data, cbor_dump=True):
+    def toCORECONF(self, json_data):
         """
-        Convert Python Dictionary data to CORECONF.
+        Convert JSON data or file to CORECONF.
         """
-        cc = self.lookupSID(py_data)
-        return cbor.dumps(cc) if cbor_dump else cc
+
+        # Convert JSON data or file to Python Dictionary
+        if json_data[-5:] == ".json":
+            with open(json_data, 'r') as f:
+                py_dict = json.load(f)
+        else:
+            py_dict = json.loads(json_data)
+
+        # Transform to CORECONF/CBOR
+        # valid = validateConfig(py_dict) #  ?
+        cc = self.lookupSID(py_dict)
+        return cbor.dumps(cc)
 
     def lookupIdentifier(self, obj, delta=0, path="/"):
         """
@@ -136,20 +145,25 @@ class CORECONFModel(ModelSID):
             dtype = self.types[path]
             return self._castDataTypes(obj, dtype, encoding=False)
 
-    def toPyDict(self, cbor_data): 
+    def toJSON(self, cbor_data, return_pydict=False): 
         """
-        Convert CORECONF (CBOR) data to Python Dictionary.
+        Convert CORECONF (CBOR) data to JSON object (or Python dictionary).
         """
+
         data = cbor.loads(cbor_data)
         pyd = self.lookupIdentifier(data)
-        # jsn = json.dumps(pyd) # json?
-        return pyd
+        valid = self.validateConfig(pyd)
+        # + Option to directly save as file ?
+        
+        # Return JSON obj / pyDict
+        return pyd if return_pydict else json.dumps(pyd) 
 
     def validateConfig(self, config):
         """
-        Validate PyDict config against module specification.
+        Validate Python Dictionary config against module specification.
         Requires model description file and configured yang/ietf modules paths.
         """
+
         if self.model_description_file is None:
             # print("No model description file specified. Skipping validation.")
             return False
