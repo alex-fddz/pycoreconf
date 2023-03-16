@@ -1,10 +1,11 @@
 # CORECONF Conversion library
 
-from .sid import getSIDsAndTypes
+# https://realpython.com/documenting-python-code/
+
+from .sid import ModelSID
 import json
 import base64
 import cbor2 as cbor
-import libconf
 
 policy_t = {
     "protect" : 0,
@@ -14,147 +15,166 @@ policy_t = {
 
 policy_t_dict = {v: k for k, v in policy_t.items()}
 
-yang_ietf_modules_paths = ["."]
-default_model_sid_file = "model.sid"
-model_description_file = None
+class CORECONFModel(ModelSID):
+    def __init__(self, 
+                 sid_file, 
+                 model_description_file=None):
+        self.model_description_file = model_description_file
+        self.yang_ietf_modules_paths = ["."]
+        ModelSID.__init__(self, sid_file)
 
-def add_modules_path(path):
-    """
-    Config / Add a path or list of paths to yang ietf modules location.
-    """
-    if type(path) is str:
-        yang_ietf_modules_paths.append(path)
-    elif type(path) is list:
-        yang_ietf_modules_paths.extend(path)
-    else:
-        raise TypeError("Can only add path string or list of paths.")
+    def add_modules_path(self, path):
+        """
+        Config / Add a path or list of paths to yang ietf modules location.
+        """
+        if type(path) is str:
+            self.yang_ietf_modules_paths.append(path)
+        elif type(path) is list:
+            self.yang_ietf_modules_paths.extend(path)
+        else:
+            raise TypeError("Can only add path string or list of paths.")
 
-def set_sid_file(sid_file):
-    """
-    Config / Set default model SID file.
-    """
-    global default_model_sid_file
-    # Check file exists
-    with open(sid_file, 'r') as f:
-        default_model_sid_file = sid_file
-
-def set_description_file(desc_file):
-    """
-    Config / Set default model description file.
-    """
-    global model_description_file
-    # Check file exists
-    with open(desc_file, 'r') as f:
-        model_description_file = desc_file
-
-def lookupSID(obj, path, parent=0):
-    """
-    Look up SID for *obj* under *path*. Dive in if it's a dictionary or a list of elements.
-    """
-
-    if type(obj) is dict:
-        json_dict = {}
-        for k, v in obj.items():
-            element = path + k      # get full identifier path
-            key = sids[element]     # look for SID value
-
-            value = lookupSID(v, element+"/", key)  # dive in
-
-            json_dict[key-parent] = value
-        return json_dict
-
-    elif type(obj) is list:
-        json_list = []
-        for e in obj:   # get each element of the list
-            value = lookupSID(e, path, parent)  # dive in
-            json_list.append(value)
-        return json_list
-
-    # Leaves:
-    else:
-        # get leaf data type according to model
-        # and cast to correct data type.
-        dtype = types[path[:-1]]
+    def _castDataTypes(self, obj, dtype, encoding):
+        """
+        Cast leaf value to correct Python data type according to YANG data type.
+        """
 
         if dtype == "string":
             return str(obj)
-        elif dtype == "uint32":
+        elif dtype in ["int8", "int16", "int32", "int64",
+                        "uint8", "uint16", "uint32", "uint64"]:
             return int(obj)
+        elif dtype == "decimal64":  # untested
+            return float(obj)
         elif dtype == "binary":
-            dec = base64.b64decode(obj)
-            return base64.b64encode(dec)
+            if encoding: 
+                dec = base64.b64decode(obj)
+                return base64.b64encode(dec)
+            else: 
+                return obj.decode()
+                # enc = base64.b64encode(obj)
+                # return base64.b64decode(enc)
+        elif dtype == "boolean":    # untested
+            return True if obj == "true" else False
         elif dtype == "inet:uri":
             return str(obj)
         elif dtype == "policy-t":
             # return obj
-            return policy_t[obj]
+            if encoding:
+                return policy_t[obj]
+            else:
+                return policy_t_dict[obj]
         else:
-            print(" X unrecognized obj type.")
-            print(path, dtype)
-            return obj
+            print("[X] Unrecognized obj type:", dtype)
+        return obj
 
-def toCORECONF(data):
-    """
-    Convert JSON data to CORECONF.
-    """
-    cc = lookupSID(data, "/")
-    return cc
+    def lookupSID(self, obj, path="/", parent=0):
+        """
+        Look up SID for *obj* under *path*. Dive in if it's a dictionary or a list of elements.
+        """
 
+        if type(obj) is dict:
+            json_dict = {}
+            for k, v in obj.items():
+                element = path + k      # get full identifier path
+                key = self.sids[element]     # look for SID value
 
-def lookupIdentifier(obj, delta=0, path="/"):
-    """
-    Look up leaf identifier for *obj* SID value. Dive in if it's a dictionary or a list of elements.
-    """
+                value = self.lookupSID(v, element+"/", key)  # dive in
 
-    if type(obj) is dict:
-        json_dict = {}
-        for k, v in obj.items():
-            sid = k + delta             # get full identifier path
-            identifier = ids[sid]       # look for SID value
+                json_dict[key-parent] = value
+            return json_dict
 
-            value = lookupIdentifier(v, sid, identifier)    # dive in
+        elif type(obj) is list:
+            json_list = []
+            for e in obj:   # get each element of the list
+                value = self.lookupSID(e, path, parent)  # dive in
+                json_list.append(value)
+            return json_list
 
-            json_dict[identifier.split("/")[-1]] = value
-        return json_dict
-
-    elif type(obj) is list:
-        json_list = []
-        for e in obj:   # get each element of the list
-            value = lookupIdentifier(e, delta, path)    # dive in
-            json_list.append(value)
-        return json_list
-
-    # Leaves:
-    else:
-        # get leaf data type according to model
-        # and cast to correct data type.
-        dtype = types[path]
-
-        if dtype == "string":
-            return str(obj)
-        elif dtype == "uint32":
-            return int(obj)
-        elif dtype == "binary":
-            return obj.decode()
-            # enc = base64.b64encode(obj)
-            # return base64.b64decode(enc)
-        elif dtype == "inet:uri":
-            return str(obj)
-        elif dtype == "policy-t":
-            # return obj
-            return policy_t_dict[obj]
+        # Leaves:
         else:
-            print(" X unrecognized obj type.")
-            print(path, dtype)
-            return obj
+            # get leaf data type according to model
+            # and cast to correct data type.
+            dtype = self.types[path[:-1]]
+            return self._castDataTypes(obj, dtype, encoding=True)
 
-def toJSON(data):
-    """
-    Convert CORECONF/CBOR data to JSON (python dictionary).
-    """
-    cfg = lookupIdentifier(data) # dict
-    jsn = json.dumps(cfg) # json
-    return cfg
+    def toCORECONF(self, json_data):
+        """
+        Convert JSON data or file to CORECONF.
+        """
+
+        # Convert JSON data or file to Python Dictionary
+        if json_data[-5:] == ".json":
+            with open(json_data, 'r') as f:
+                py_dict = json.load(f)
+        else:
+            py_dict = json.loads(json_data)
+
+        # Transform to CORECONF/CBOR
+        # valid = validateConfig(py_dict) #  ?
+        cc = self.lookupSID(py_dict)
+        return cbor.dumps(cc)
+
+    def lookupIdentifier(self, obj, delta=0, path="/"):
+        """
+        Look up leaf identifier for *obj* SID value. Dive in if it's a dictionary or a list of elements.
+        """
+
+        if type(obj) is dict:
+            json_dict = {}
+            for k, v in obj.items():
+                sid = k + delta             # get full identifier path
+                identifier = self.ids[sid]       # look for SID value
+
+                value = self.lookupIdentifier(v, sid, identifier)    # dive in
+
+                json_dict[identifier.split("/")[-1]] = value
+            return json_dict
+
+        elif type(obj) is list:
+            json_list = []
+            for e in obj:   # get each element of the list
+                value = self.lookupIdentifier(e, delta, path)    # dive in
+                json_list.append(value)
+            return json_list
+
+        # Leaves:
+        else:
+            # get leaf data type according to model
+            # and cast to correct data type.
+            dtype = self.types[path]
+            return self._castDataTypes(obj, dtype, encoding=False)
+
+    def toJSON(self, cbor_data, return_pydict=False): 
+        """
+        Convert CORECONF (CBOR) data to JSON object (or Python dictionary).
+        """
+
+        data = cbor.loads(cbor_data)
+        pyd = self.lookupIdentifier(data)
+        valid = self.validateConfig(pyd)
+        # + Option to directly save as file ?
+        
+        # Return JSON obj / pyDict
+        return pyd if return_pydict else json.dumps(pyd) 
+
+    def validateConfig(self, config):
+        """
+        Validate Python Dictionary config against module specification.
+        Requires model description file and configured yang/ietf modules paths.
+        """
+
+        if self.model_description_file is None:
+            # print("No model description file specified. Skipping validation.")
+            return False
+        from yangson import DataModel
+        dm = DataModel.from_file(self.model_description_file, 
+            self.yang_ietf_modules_paths)
+        data = dm.from_raw(config)
+        data.validate()
+        # print("Config validation OK.")
+        return True
+
 
 def toLibconf(cfg_dict):
     """
@@ -166,21 +186,6 @@ def toLibconf(cfg_dict):
     # Convert to libconf
     cfg_lc = eval(cfg_str) # convert back to dict
     return libconf.dumps(cfg_lc)
-
-def validateJSON(config, desc_file, modules_paths=["."]):
-    """
-    Validate JSON config against module specification.
-    """
-    if desc_file is None:
-        print("No model description file provided. Skipping validation.")
-        return
-    from yangson import DataModel
-    dm = DataModel.from_file(desc_file, 
-        modules_paths)
-    data = dm.from_raw(config)
-    data.validate()
-    print("Config validation OK.")
-
 
 def js2cc(json_file, sid_file=None):
     """
@@ -287,3 +292,24 @@ def coreconf_to_libconf(cbor_data, save_loc, sid_file=None):
     with open(save_loc, "w") as f:
         f.write(cfg)
     print("Saved config to", save_loc)
+
+
+def set_sid_file(sid_file):
+    """
+    DEPRECATED.
+    Config / Set default model SID file.
+    """
+    global default_model_sid_file
+    # Check file exists
+    with open(sid_file, 'r') as f:
+        default_model_sid_file = sid_file
+
+def set_description_file(desc_file):
+    """
+    DEPRECATED.
+    Config / Set default model description file.
+    """
+    global model_description_file
+    # Check file exists
+    with open(desc_file, 'r') as f:
+        model_description_file = desc_file
