@@ -15,11 +15,7 @@ From source:
 ```
 git clone https://github.com/alex-fddz/pycoreconf.git
 cd pycoreconf
-<<<<<<< HEAD
-python3 setup.py install   # this might require root access
-=======
 python3 setup.py install    # this might require root access
->>>>>>> class
 ```
 
 ### To uninstall
@@ -79,9 +75,9 @@ Returns nothing. Required for decoded configuration data validation.
 
 Returns (CBOR encoded) CORECONF configuration data.
 
-### `ccm.toJSON(coreconf_data, return_pydict=False)`
+### `ccm.toJSON(cbor_data, return_pydict=False)`
 
-- `coreconf_data`: (CBOR encoded) CORECONF configuration data.
+- `cbor_data`: (CBOR encoded) CORECONF configuration data.
 - `return_pydict`: Return data as a Python dictionary instead (useful if doing further processing or conversions to other formats)
 
 Returns decoded configuration data as a JSON object (or Python dictionary). Validates config data if a model description file has been set.
@@ -101,7 +97,7 @@ Config data is automatically validated during CORECONF/CBOR decoding.
 
 - `config_pydict`: Python dictionary holding configuration data.
 
-Returns a python dictionary with configuration keys/leaves substituted by their corresponding SIDs.
+Returns a python dictionary with configuration keys/leaves substituted by their corresponding SID delta values.
 
 ### `ccm.lookupIdentifier(config_pydict)`
 
