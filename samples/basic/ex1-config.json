@@ -1,0 +1,6 @@
+{
+    "example-1:greeting": {
+        "author" : "Obi",
+        "message" : "Hello there!"
+    }
+}
