@@ -54,8 +54,9 @@ class CORECONFModel(ModelSID):
                 return obj.decode()
                 # enc = base64.b64encode(obj)
                 # return base64.b64decode(enc)
-        elif dtype == "boolean":    # untested
-            return True if obj == "true" else False
+        elif dtype == "boolean":
+            # ret = True if obj == "true" else False
+            return obj 
         elif dtype == "inet:uri":
             return str(obj)
         elif dtype == "policy-t":
