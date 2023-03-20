@@ -1,0 +1,44 @@
+module example-2 {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/example-2";
+
+  prefix "ex2";
+
+  container bag {
+    list foo {
+      key "number";
+      ordered-by user;
+      unique "in-words";
+      leaf number {
+        type uint8;
+      }
+      leaf prime {
+        type boolean;
+      }
+      leaf in-words {
+        type string {
+          pattern "[a-z][a-z\\-]+[a-z]" {
+	    error-message "must be number in words";
+	  }
+        }
+      }
+      leaf unlucky {
+        type boolean;
+	default false;
+      }
+    }
+    leaf bar {
+      type boolean;
+      mandatory "true";
+    }
+    leaf baz {
+      when "not(../foo/in-words = 'forty-two')";
+      type decimal64 {
+        fraction-digits "7";
+      }
+      default "0";
+    }
+  }
+}
