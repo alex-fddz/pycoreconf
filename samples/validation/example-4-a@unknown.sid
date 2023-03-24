@@ -1,0 +1,35 @@
+{
+  "assignment-ranges": [
+    {
+      "entry-point": 60000,
+      "size": 10
+    }
+  ],
+  "module-name": "example-4-a",
+  "module-revision": "unknown",
+  "items": [
+    {
+      "namespace": "module",
+      "identifier": "example-4-a",
+      "sid": 60000
+    },
+    {
+      "namespace": "data",
+      "identifier": "/example-4-a:bag",
+      "sid": 60001
+    },
+    {
+      "namespace": "data",
+      "identifier": "/example-4-a:bag/bar",
+      "sid": 60002,
+      "type": "boolean"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/example-4-a:bag/foo",
+      "sid": 60003,
+      "type": "uint8"
+    }
+  ],
+  "key-mapping": {}
+}

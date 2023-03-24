@@ -1,0 +1,29 @@
+module example-4-a {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/example-4-a";
+
+  prefix "ex4a";
+
+  import ietf-netconf-acm {
+    prefix "nacm";
+    revision-date 2018-02-14;
+  }
+
+  container bag {
+    description "Top-level container.";
+    presence "true";
+    leaf foo {
+      type uint8;
+      units "foondela";
+      mandatory "true";
+      nacm:default-deny-write;
+    }
+    leaf bar {
+      type boolean;
+      default "true";
+      config "false";
+    }
+  }
+}
