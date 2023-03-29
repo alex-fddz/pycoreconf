@@ -7,14 +7,6 @@ import json
 import base64
 import cbor2 as cbor
 
-policy_t = {
-    "protect" : 0,
-    "bypass" : 1,
-    "discard" : 2
-}
-
-policy_t_dict = {v: k for k, v in policy_t.items()}
-
 class CORECONFModel(ModelSID):
     def __init__(self, 
                  sid_file, 
@@ -60,12 +52,6 @@ class CORECONFModel(ModelSID):
                 return bool(obj) 
             elif dtype == "inet:uri":
                 return str(obj)
-            elif dtype == "policy-t":
-                # return obj
-                if encoding:
-                    return policy_t[obj]
-                else:
-                    return policy_t_dict[obj]
             else:
                 print("[X] Unrecognized obj type:", dtype)
         elif type(dtype) is dict: # enumeration ({"value":"name"})
