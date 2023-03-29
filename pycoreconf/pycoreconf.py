@@ -39,34 +39,42 @@ class CORECONFModel(ModelSID):
         Cast leaf value to correct Python data type according to YANG data type.
         """
 
-        if dtype == "string":
-            return str(obj)
-        elif dtype in ["int8", "int16", "int32", "int64",
-                        "uint8", "uint16", "uint32", "uint64"]:
-            return int(obj)
-        elif dtype == "decimal64":  # untested
-            return float(obj)
-        elif dtype == "binary":
-            if encoding: 
-                dec = base64.b64decode(obj)
-                return base64.b64encode(dec)
-            else: 
-                return obj.decode()
-                # enc = base64.b64encode(obj)
-                # return base64.b64decode(enc)
-        elif dtype == "boolean":
-            # ret = True if obj == "true" else False
-            return bool(obj) 
-        elif dtype == "inet:uri":
-            return str(obj)
-        elif dtype == "policy-t":
-            # return obj
-            if encoding:
-                return policy_t[obj]
+        if type(dtype) is str:
+            if dtype == "string":
+                return str(obj)
+            elif dtype in ["int8", "int16", "int32", "int64",
+                            "uint8", "uint16", "uint32", "uint64"]:
+                return int(obj)
+            elif dtype == "decimal64":  # untested
+                return float(obj)
+            elif dtype == "binary":
+                if encoding: 
+                    dec = base64.b64decode(obj)
+                    return base64.b64encode(dec)
+                else: 
+                    return obj.decode()
+                    # enc = base64.b64encode(obj)
+                    # return base64.b64decode(enc)
+            elif dtype == "boolean":
+                # ret = True if obj == "true" else False
+                return bool(obj) 
+            elif dtype == "inet:uri":
+                return str(obj)
+            elif dtype == "policy-t":
+                # return obj
+                if encoding:
+                    return policy_t[obj]
+                else:
+                    return policy_t_dict[obj]
             else:
-                return policy_t_dict[obj]
-        else:
-            print("[X] Unrecognized obj type:", dtype)
+                print("[X] Unrecognized obj type:", dtype)
+        elif type(dtype) is dict: # enumeration ({"value":"name"})
+            if encoding: # inverse dict, w value as int
+                dtype = {v: int(k) for k, v in dtype.items()}
+            return dtype[str(obj)]
+        elif type(dtype) is list: # union 
+            print("union not yet supported.")
+            return obj
         return obj
 
     def lookupSID(self, obj, path="/", parent=0):
