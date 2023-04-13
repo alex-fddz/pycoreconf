@@ -52,6 +52,8 @@ class CORECONFModel(ModelSID):
                 return bool(obj) 
             elif dtype == "inet:uri":
                 return str(obj)
+            elif dtype == "empty":
+                return obj
             else:
                 print("[X] Unrecognized obj type:", dtype)
         elif type(dtype) is dict: # enumeration ({"value":"name"})
