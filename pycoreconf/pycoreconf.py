@@ -52,7 +52,7 @@ class CORECONFModel(ModelSID):
                 return bool(obj) 
             elif dtype == "inet:uri":
                 return str(obj)
-            elif dtype == "empty":
+            elif dtype in ["empty", "leafref"]: # just return obj
                 return obj
             else:
                 print("[X] Unrecognized obj type:", dtype)
