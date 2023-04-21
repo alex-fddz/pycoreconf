@@ -42,10 +42,11 @@ class CORECONFModel(ModelSID):
             elif dtype == "binary":
                 if encoding: 
                     dec = base64.b64decode(obj)
-                    return base64.b64encode(dec)
+                    # return base64.b64encode(dec) # Nooo.
+                    return dec
                 else: 
-                    return obj.decode()
-                    # enc = base64.b64encode(obj)
+                    enc = base64.b64encode(obj)
+                    return enc.decode()
                     # return base64.b64decode(enc)
             elif dtype == "boolean":
                 # ret = True if obj == "true" else False
