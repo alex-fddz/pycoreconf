@@ -1,13 +1,14 @@
 # CORECONF Conversion library
 
-# https://realpython.com/documenting-python-code/
-
 from .sid import ModelSID
 import json
 import base64
 import cbor2 as cbor
 
 class CORECONFModel(ModelSID):
+    """A class to represent the YANG Model through its SID file, used
+    to convert to and from CORECONF/CBOR representation."""
+
     def __init__(self, 
                  sid_file, 
                  model_description_file=None):
@@ -18,7 +19,9 @@ class CORECONFModel(ModelSID):
     def add_modules_path(self, path):
         """
         Config / Add a path or list of paths to yang ietf modules location.
+        Required for decoded configuration data validation.
         """
+
         if type(path) is str:
             self.yang_ietf_modules_paths.append(path)
         elif type(path) is list:
@@ -53,22 +56,25 @@ class CORECONFModel(ModelSID):
                 return bool(obj) 
             elif dtype == "inet:uri":
                 return str(obj)
-            elif dtype in ["empty", "leafref"]: # just return obj
+            elif dtype in ["empty", "leafref", "instance-identifier", "bits", 
+                           "identityref"]: # just return obj
+                # print("[-]", dtype, ": Returning as is." )
                 return obj
             else:
-                print("[X] Unrecognized obj type:", dtype)
+                print("[X] Unrecognized obj type:", dtype, ". Returning as is.")
         elif type(dtype) is dict: # enumeration ({"value":"name"})
             if encoding: # inverse dict, w value as int
                 dtype = {v: int(k) for k, v in dtype.items()}
             return dtype[str(obj)]
         elif type(dtype) is list: # union 
-            print("union not yet supported.")
+            print("[-] Union: Returning as is.")
             return obj
         return obj
 
     def lookupSID(self, obj, path="/", parent=0):
         """
-        Look up SID for *obj* under *path*. Dive in if it's a dictionary or a list of elements.
+        Look up SID for *obj* under *path*. 
+        Dive in if it's a dictionary or a list of elements.
         """
 
         if type(obj) is dict:
@@ -115,7 +121,8 @@ class CORECONFModel(ModelSID):
 
     def lookupIdentifier(self, obj, delta=0, path="/"):
         """
-        Look up leaf identifier for *obj* SID value. Dive in if it's a dictionary or a list of elements.
+        Look up leaf identifier for *obj* SID value. 
+        Dive in if it's a dictionary or a list of elements.
         """
 
         if type(obj) is dict:
@@ -172,142 +179,3 @@ class CORECONFModel(ModelSID):
         data.validate()
         # print("Config validation OK.")
         return True
-
-
-def toLibconf(cfg_dict):
-    """
-    Convert a python dictionary to libconf data (.cfg).
-    """
-    # Prep for libconf (pyTuple = liblist)
-    cfg_str = str(cfg_dict)
-    cfg_str = cfg_str.replace("[", "libconf.LibconfList([").replace("]", "])")
-    # Convert to libconf
-    cfg_lc = eval(cfg_str) # convert back to dict
-    return libconf.dumps(cfg_lc)
-
-def js2cc(json_file, sid_file=None):
-    """
-    Match SID file + JSON config data to generate CORECONF (CBOR) & save as file.
-    """
-
-    print(f"Generating CORECONF from {json_file} (+{sid_file}):")
-
-    import pprint
-    pp = pprint.PrettyPrinter(indent=2)
-    sid_file = default_model_sid_file if sid_file is None else sid_file
-
-    # Retrieve SIDs & data types from SID file
-    global sids, types
-    sids, types = getSIDsAndTypes(sid_file)
-
-    # Read the contents of the json config file
-    with open(json_file, "r") as f:
-        obj = json.load(f)
-
-    # Convert and pretty-print
-    pp.pprint(obj)
-    cc = toCORECONF(obj)
-    pp.pprint(cc)
-
-    # Dump CORECONF data as CBOR
-    cb = cbor.dumps(cc)
-    print("Size in CBOR =", len(cb))
-
-    # Save to file
-    fname = json_file[:-4]+"cbor"
-    with open(fname, "wb") as bf:
-        bf.write(cb)
-
-    print(f"Done! Saved to {fname}.")
-
-def cc2cfg(cbor_file, sid_file=None):
-    """
-    Match SID file + CORECONF (CBOR) config data to generate libconfig (.cfg) & save as file.
-    """
-
-    print(f"Generating libconfig from {cbor_file} (+{sid_file}):")
-
-    import pprint
-    pp = pprint.PrettyPrinter(indent=2)
-    sid_file = default_model_sid_file if sid_file is None else sid_file
-
-    # Retrieve IDs & data types from SID file
-    global ids, types #, sids
-    sids, types = getSIDsAndTypes(sid_file)
-    # Inverse sids = {sid:identifier}
-    ids = {v: k for k, v in sids.items()}
-    # or: ids = getIdentifiers(sid_file)
-    # pp.pprint(ids)
-
-    # Read the contents of the CORECONF/CBOR file
-    with open(cbor_file, "rb") as f:
-        cc = cbor.load(f) # dict
-
-    # Convert and pretty-print
-    pp.pprint(cc)
-    jsn = toJSON(cc)
-    pp.pprint(jsn)
-
-    # Validate config
-    validateJSON(jsn, model_description_file, yang_ietf_modules_paths)
-
-    # Generate libconf .cfg file
-    cfg = toLibconf(jsn)
-    print(cfg)
-
-    # Save to file
-    fname = cbor_file[:-4]+"cfg"
-    with open(fname, "w") as f:
-        f.write(cfg)
-
-    print(f"Done! Saved to {fname}.")
-
-def json_to_coreconf(config_file, sid_file=None):
-    """
-    Minimal function; to use in coap_post.py
-    """
-    global sids, types
-    sid_file = default_model_sid_file if sid_file is None else sid_file
-    sids, types = getSIDsAndTypes(sid_file)
-    with open(config_file, "r") as f:
-        obj = json.load(f) # read json config file
-    cc = toCORECONF(obj)
-    return cbor.dumps(cc)
-
-def coreconf_to_libconf(cbor_data, save_loc, sid_file=None):
-    """
-    Minimal function; to use in coap_server.py
-    """
-    global ids, types
-    sid_file = default_model_sid_file if sid_file is None else sid_file
-    sids, types = getSIDsAndTypes(sid_file)
-    ids = {v: k for k, v in sids.items()}
-    jsn = toJSON(cbor_data)
-    validateJSON(jsn, model_description_file, yang_ietf_modules_paths)
-    #TODO: remove parent key (module name)
-    cfg = toLibconf(jsn)
-    # Save as file
-    with open(save_loc, "w") as f:
-        f.write(cfg)
-    print("Saved config to", save_loc)
-
-
-def set_sid_file(sid_file):
-    """
-    DEPRECATED.
-    Config / Set default model SID file.
-    """
-    global default_model_sid_file
-    # Check file exists
-    with open(sid_file, 'r') as f:
-        default_model_sid_file = sid_file
-
-def set_description_file(desc_file):
-    """
-    DEPRECATED.
-    Config / Set default model description file.
-    """
-    global model_description_file
-    # Check file exists
-    with open(desc_file, 'r') as f:
-        model_description_file = desc_file
