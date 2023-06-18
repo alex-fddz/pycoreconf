@@ -7,7 +7,7 @@ class ModelSID:
 
     def __init__(self, sid_file):
         self.sid_file = sid_file
-        self.sids, self.types = self.getSIDsAndTypes() #req. ltn22/pyang
+        self.sids, self.types, self.name = self.getSIDsAndTypes() #req. ltn22/pyang
         self.ids = {v: k for k, v in self.sids.items()} # {sid:id}
 
     def getSIDsAndTypes(self):
@@ -28,7 +28,10 @@ class ModelSID:
             if "type" in item.keys():
                 types[item["identifier"]] = item["type"]
 
-        return sids, types
+        # tmp while single module support:
+        name = obj["module-name"]
+
+        return sids, types, name
 
 
     def getIdentifiers(self):
