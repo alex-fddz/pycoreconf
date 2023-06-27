@@ -56,8 +56,15 @@ class CORECONFModel(ModelSID):
                 return bool(obj) 
             elif dtype == "inet:uri":
                 return str(obj)
-            elif dtype in ["empty", "leafref", "instance-identifier", "bits", 
-                           "identityref"]: # just return obj
+            elif dtype == "identityref": # look 'module:identity' in sids 
+                if encoding:
+                    idref_val = obj.split(":")
+                    ref_mod, ref_id = idref_val[0], idref_val[1] # only supports 1 module for now
+                    return self.sids[ref_id]
+                else: # sid -> "module:identityref"
+                    idref_val = self.name +":"+ self.ids[obj] 
+                    return idref_val
+            elif dtype in ["empty", "leafref", "instance-identifier", "bits"]: # just return obj
                 # print("[-]", dtype, ": Returning as is." )
                 return obj
             else:
