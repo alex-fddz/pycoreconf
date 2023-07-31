@@ -5,6 +5,36 @@ import json
 import base64
 import cbor2 as cbor
 
+
+class ValueClass:
+    """
+    Wrapper class to encapsulate objects through the iteration
+    """
+    def __init__(self, value):
+        self.value = value
+
+def unwrapValues(object):
+    """
+    A function to unwrap Value objects properly, used by lookupSIDWithoutRecursion function
+    """
+    internalStack = [object]
+
+    while internalStack:
+        currentObject = internalStack.pop()
+
+        if type(currentObject) == dict:
+            keys = list(currentObject.keys())
+            for key in keys:
+                currentObject[key] = currentObject[key].value
+                internalStack.append(currentObject[key])
+        
+        elif type(currentObject) == list:
+            for i in range(len(currentObject)):
+                currentObject[i] = currentObject[i].value
+                internalStack.append(currentObject[i])
+
+    return object
+
 class CORECONFModel(ModelSID):
     """A class to represent the YANG Model through its SID file, used
     to convert to and from CORECONF/CBOR representation."""
@@ -108,6 +138,42 @@ class CORECONFModel(ModelSID):
             # and cast to correct data type.
             dtype = self.types[path[:-1]]
             return self._castDataTypes(obj, dtype, encoding=True)
+            
+    def lookupSIDWithoutRecursion(self, jsonData, path='/', parent=0):
+        """
+        a clone of lookupSID method which uses non recursive methods to compute SIDs and build the object
+        """
+        
+        stack = [(ValueClass(jsonData), path, parent)]
+
+        while stack:
+            currentObject, currentPath, currentParent = stack.pop()
+            currentValue  = currentObject.value
+
+            # currentValue is a dict here, iterate through key/value pairs and add values to the stack
+            if type(currentValue) == dict:
+                keys = list(currentValue.keys())
+
+                for key in keys:
+                    qualifiedPath = currentPath + key
+                    childSIDValue = self.sids[qualifiedPath]
+                    sidDiff  = childSIDValue - currentParent
+                    currentValue[sidDiff] = ValueClass(currentValue.pop(key))
+                    stack.append((currentValue[sidDiff], qualifiedPath+"/", childSIDValue))
+            
+            # currentValue is a list type, append each of the object in currentValue to the stack
+            elif type(currentValue) == list:
+                for i in range(len(currentValue)):
+                    currentValue[i] = ValueClass(currentValue[i])
+                    stack.append((currentValue[i], currentPath, currentParent))
+            
+            # currentValue is a leaf here, transform their datatype 
+            else:
+                dtype = self.types[currentPath[:-1]]
+                currentObject.value = self._castDataTypes(currentObject.value, dtype, encoding=True)
+        
+        # Unwrap the ValueClass objects before returning
+        return(unwrapValues(jsonData))
 
     def toCORECONF(self, json_data):
         """
