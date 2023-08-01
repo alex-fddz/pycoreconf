@@ -112,6 +112,7 @@ class CORECONFModel(ModelSID):
         """
         Look up SID for *obj* under *path*. 
         Dive in if it's a dictionary or a list of elements.
+        > Deprecated for lookupSIDWithoutRecursion.
         """
 
         if type(obj) is dict:
@@ -189,7 +190,7 @@ class CORECONFModel(ModelSID):
 
         # Transform to CORECONF/CBOR
         # valid = validateConfig(py_dict) #  ?
-        cc = self.lookupSID(py_dict)
+        cc = self.lookupSIDWithoutRecursion(py_dict)
         return cbor.dumps(cc)
 
     def lookupIdentifier(self, obj, delta=0, path="/"):
