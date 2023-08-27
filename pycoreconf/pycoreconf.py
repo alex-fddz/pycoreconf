@@ -224,13 +224,50 @@ class CORECONFModel(ModelSID):
             dtype = self.types[path]
             return self._castDataTypes(obj, dtype, encoding=False)
 
+    def lookupIdentifierWithoutRecursion(self, obj, delta=0, path='/'):
+        """
+        A clone of lookupIdentifier method which uses non recursive methods to build the original JSON Object from SID represented Object
+        """
+        stack = [(ValueClass(obj), delta, path)]
+
+        while stack:
+            currentObject, currentDelta, currentPath = stack.pop()
+            currentValue = currentObject.value
+
+            # currentValue is a dict here, iterate through key/value pairs and add values to the stack
+            if type(currentValue) is dict:
+                keys = list(currentValue.keys())
+                for key in keys:
+                    # get full identifier path
+                    
+                    sid = key + currentDelta
+                    # look for the original identifiers
+                    identifier = self.ids[sid]
+                    nodeIdentifier = identifier.split("/")[-1]
+                    currentValue[nodeIdentifier] = ValueClass(currentValue.pop(key))
+                    stack.append((currentValue[nodeIdentifier], sid, identifier))
+        
+            # currentValue is a list type, append each of the object in currentValue to the stack
+            elif type(currentValue) is list:
+                for i in range(len(currentValue)):
+                    currentValue[i] = ValueClass(currentValue[i])
+                    stack.append((currentValue[i], currentDelta, currentPath))
+
+            # currentValue is a leaf here, transform their datatype before adding to the currentObject
+            else:
+                dtype = self.types[currentPath]
+                currentObject.value = self._castDataTypes(currentObject.value, dtype, encoding=False)
+
+        # Unwrap the ValueClass objects before returning
+        return(unwrapValues(obj))
+
     def toJSON(self, cbor_data, return_pydict=False): 
         """
         Convert CORECONF (CBOR) data to JSON object (or Python dictionary).
         """
 
         data = cbor.loads(cbor_data)
-        pyd = self.lookupIdentifier(data)
+        pyd = self.lookupIdentifierWithoutRecursion(data)
         valid = self.validateConfig(pyd)
         # + Option to directly save as file ?
         
