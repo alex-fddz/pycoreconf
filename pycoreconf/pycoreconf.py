@@ -40,11 +40,12 @@ class CORECONFModel(ModelSID):
     to convert to and from CORECONF/CBOR representation."""
 
     def __init__(self, 
-                 sid_file, 
+                 *sid_files, 
                  model_description_file=None):
+        
         self.model_description_file = model_description_file
         self.yang_ietf_modules_paths = ["."]
-        ModelSID.__init__(self, sid_file)
+        ModelSID.__init__(self, *sid_files)
 
     def add_modules_path(self, path):
         """
