@@ -22,7 +22,7 @@ class ModelSID:
         # Get items & map identifier : sid and leafIdentifier : typename
         sids = {} # init
         types = {} # init
-        items = obj["items"] # list
+        items = obj["item"] # list
         for item in items:
             sids[item["identifier"]] = item["sid"]
             if "type" in item.keys():
@@ -45,7 +45,7 @@ class ModelSID:
 
         # Get items & map identifier : sid
         ids = {} # init
-        items = obj["items"] # list
+        items = obj["item"] # list
         for item in items:
             ids[item["sid"]] = item["identifier"]
 
@@ -62,7 +62,7 @@ class ModelSID:
 
         # Get items & map identifier : sid
         sids = {} # init
-        items = obj["items"] # list
+        items = obj["item"] # list
         for item in items:
             sids[item["identifier"]] = item["sid"]
 

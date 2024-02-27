@@ -29,6 +29,6 @@ else
     fi
 fi
 
-pyang --sid-generate-file $ENTRY:$SIZE --sid-list --sid-extention $YANG -p $MODULES
+pyang --sid-generate-file $ENTRY:$SIZE --sid-list --sid-extension $YANG -p $MODULES
 
 echo "Done."
