@@ -1,5 +1,5 @@
 {
-  "assignment-ranges": [
+  "assignment-range": [
     {
       "entry-point": 60000,
       "size": 10
@@ -7,26 +7,30 @@
   ],
   "module-name": "example-1",
   "module-revision": "unknown",
-  "items": [
+  "item": [
     {
       "namespace": "module",
       "identifier": "example-1",
+      "status": "unstable",
       "sid": 60000
     },
     {
       "namespace": "data",
       "identifier": "/example-1:greeting",
+      "status": "unstable",
       "sid": 60001
     },
     {
       "namespace": "data",
       "identifier": "/example-1:greeting/author",
+      "status": "unstable",
       "sid": 60002,
       "type": "string"
     },
     {
       "namespace": "data",
       "identifier": "/example-1:greeting/message",
+      "status": "unstable",
       "sid": 60003,
       "type": "string"
     }

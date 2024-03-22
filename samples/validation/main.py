@@ -15,7 +15,7 @@ config_file = "example-data.json"
 
 # Convert configuration to CORECONF/CBOR
 cbor_data = ccm.toCORECONF(config_file) 
-print("Encoded CBOR data (CORECONF payload) =", cbor_data)
+print("Encoded CBOR data (CORECONF payload) =", cbor_data.hex())
 
 # Decode CBOR data back to JSON configuration data
 decoded_json = ccm.toJSON(cbor_data)  # will validate the decoded config
