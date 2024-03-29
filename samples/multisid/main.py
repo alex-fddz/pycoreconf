@@ -1,17 +1,19 @@
 # pycoreconf sample: "basic"
 # This script demonstrates the basic usage of pycoreconf
-#  using a simple YANG datamodel.
+#  using multiple sid file definitions.
 
 import pycoreconf
 
 # Create the model object (specify .sid and model description json file)
-ccm = pycoreconf.CORECONFModel("example-4-a@unknown.sid", model_description_file="description.json")
+ccm = pycoreconf.CORECONFModel("ietf-schc@2023-01-28.sid", 
+                               "ietf-schc-oam@2021-11-10.sid",
+                               model_description_file="description.json")
 # Specify modules location for validation (or a list of paths):
 ccm.add_modules_path("/home/alex/Projects/pyang/modules/ietf/")
 ccm.add_modules_path(["/path/to/modules/", "another/path/"])
 
 # Read JSON configuration file
-config_file = "example-data.json"
+config_file = "schc.json"
 
 # Convert configuration to CORECONF/CBOR
 cbor_data = ccm.toCORECONF(config_file) 

@@ -1,0 +1,884 @@
+{
+  "assignment-range": [
+    {
+      "entry-point": 5000,
+      "size": 300
+    }
+  ],
+  "module-name": "ietf-schc",
+  "module-revision": "2023-01-28",
+  "item": [
+    {
+      "namespace": "module",
+      "identifier": "ietf-schc",
+      "status": "unstable",
+      "sid": 5000
+    },
+    {
+      "namespace": "identity",
+      "identifier": "ack-behavior-after-all-0",
+      "status": "unstable",
+      "sid": 5001
+    },
+    {
+      "namespace": "identity",
+      "identifier": "ack-behavior-after-all-1",
+      "status": "unstable",
+      "sid": 5002
+    },
+    {
+      "namespace": "identity",
+      "identifier": "ack-behavior-base-type",
+      "status": "unstable",
+      "sid": 5003
+    },
+    {
+      "namespace": "identity",
+      "identifier": "ack-behavior-by-layer2",
+      "status": "unstable",
+      "sid": 5004
+    },
+    {
+      "namespace": "identity",
+      "identifier": "all-1-data-base-type",
+      "status": "unstable",
+      "sid": 5005
+    },
+    {
+      "namespace": "identity",
+      "identifier": "all-1-data-no",
+      "status": "unstable",
+      "sid": 5006
+    },
+    {
+      "namespace": "identity",
+      "identifier": "all-1-data-sender-choice",
+      "status": "unstable",
+      "sid": 5007
+    },
+    {
+      "namespace": "identity",
+      "identifier": "all-1-data-yes",
+      "status": "unstable",
+      "sid": 5008
+    },
+    {
+      "namespace": "identity",
+      "identifier": "cda-appiid",
+      "status": "unstable",
+      "sid": 5009
+    },
+    {
+      "namespace": "identity",
+      "identifier": "cda-base-type",
+      "status": "unstable",
+      "sid": 5010
+    },
+    {
+      "namespace": "identity",
+      "identifier": "cda-compute",
+      "status": "unstable",
+      "sid": 5011
+    },
+    {
+      "namespace": "identity",
+      "identifier": "cda-deviid",
+      "status": "unstable",
+      "sid": 5012
+    },
+    {
+      "namespace": "identity",
+      "identifier": "cda-lsb",
+      "status": "unstable",
+      "sid": 5013
+    },
+    {
+      "namespace": "identity",
+      "identifier": "cda-mapping-sent",
+      "status": "unstable",
+      "sid": 5014
+    },
+    {
+      "namespace": "identity",
+      "identifier": "cda-not-sent",
+      "status": "unstable",
+      "sid": 5015
+    },
+    {
+      "namespace": "identity",
+      "identifier": "cda-value-sent",
+      "status": "unstable",
+      "sid": 5016
+    },
+    {
+      "namespace": "identity",
+      "identifier": "di-base-type",
+      "status": "unstable",
+      "sid": 5017
+    },
+    {
+      "namespace": "identity",
+      "identifier": "di-bidirectional",
+      "status": "unstable",
+      "sid": 5018
+    },
+    {
+      "namespace": "identity",
+      "identifier": "di-down",
+      "status": "unstable",
+      "sid": 5019
+    },
+    {
+      "namespace": "identity",
+      "identifier": "di-up",
+      "status": "unstable",
+      "sid": 5020
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-base-type",
+      "status": "unstable",
+      "sid": 5021
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-base-type",
+      "status": "unstable",
+      "sid": 5022
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-code",
+      "status": "unstable",
+      "sid": 5023
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-code-class",
+      "status": "unstable",
+      "sid": 5024
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-code-detail",
+      "status": "unstable",
+      "sid": 5025
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-mid",
+      "status": "unstable",
+      "sid": 5026
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option",
+      "status": "unstable",
+      "sid": 5027
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-accept",
+      "status": "unstable",
+      "sid": 5028
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-block1",
+      "status": "unstable",
+      "sid": 5029
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-block2",
+      "status": "unstable",
+      "sid": 5030
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-content-format",
+      "status": "unstable",
+      "sid": 5031
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-etag",
+      "status": "unstable",
+      "sid": 5032
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-if-match",
+      "status": "unstable",
+      "sid": 5033
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-if-none-match",
+      "status": "unstable",
+      "sid": 5034
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-location-path",
+      "status": "unstable",
+      "sid": 5035
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-location-query",
+      "status": "unstable",
+      "sid": 5036
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-max-age",
+      "status": "unstable",
+      "sid": 5037
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-no-response",
+      "status": "unstable",
+      "sid": 5038
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-observe",
+      "status": "unstable",
+      "sid": 5039
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-oscore-flags",
+      "status": "unstable",
+      "sid": 5040
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-oscore-kid",
+      "status": "unstable",
+      "sid": 5041
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-oscore-kidctx",
+      "status": "unstable",
+      "sid": 5042
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-oscore-piv",
+      "status": "unstable",
+      "sid": 5043
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-proxy-scheme",
+      "status": "unstable",
+      "sid": 5044
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-proxy-uri",
+      "status": "unstable",
+      "sid": 5045
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-size1",
+      "status": "unstable",
+      "sid": 5046
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-size2",
+      "status": "unstable",
+      "sid": 5047
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-uri-host",
+      "status": "unstable",
+      "sid": 5048
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-uri-path",
+      "status": "unstable",
+      "sid": 5049
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-uri-port",
+      "status": "unstable",
+      "sid": 5050
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-option-uri-query",
+      "status": "unstable",
+      "sid": 5051
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-tkl",
+      "status": "unstable",
+      "sid": 5052
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-token",
+      "status": "unstable",
+      "sid": 5053
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-type",
+      "status": "unstable",
+      "sid": 5054
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-coap-version",
+      "status": "unstable",
+      "sid": 5055
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-ipv6-appiid",
+      "status": "unstable",
+      "sid": 5056
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-ipv6-appprefix",
+      "status": "unstable",
+      "sid": 5057
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-ipv6-base-type",
+      "status": "unstable",
+      "sid": 5058
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-ipv6-deviid",
+      "status": "unstable",
+      "sid": 5059
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-ipv6-devprefix",
+      "status": "unstable",
+      "sid": 5060
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-ipv6-flowlabel",
+      "status": "unstable",
+      "sid": 5061
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-ipv6-hoplimit",
+      "status": "unstable",
+      "sid": 5062
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-ipv6-nextheader",
+      "status": "unstable",
+      "sid": 5063
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-ipv6-payload-length",
+      "status": "unstable",
+      "sid": 5064
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-ipv6-trafficclass",
+      "status": "unstable",
+      "sid": 5065
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-ipv6-trafficclass-ds",
+      "status": "unstable",
+      "sid": 5066
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-ipv6-trafficclass-ecn",
+      "status": "unstable",
+      "sid": 5067
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-ipv6-version",
+      "status": "unstable",
+      "sid": 5068
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-oscore-base-type",
+      "status": "unstable",
+      "sid": 5069
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-udp-app-port",
+      "status": "unstable",
+      "sid": 5070
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-udp-base-type",
+      "status": "unstable",
+      "sid": 5071
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-udp-checksum",
+      "status": "unstable",
+      "sid": 5072
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-udp-dev-port",
+      "status": "unstable",
+      "sid": 5073
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fid-udp-length",
+      "status": "unstable",
+      "sid": 5074
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fl-base-type",
+      "status": "unstable",
+      "sid": 5075
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fl-token-length",
+      "status": "unstable",
+      "sid": 5076
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fl-variable",
+      "status": "unstable",
+      "sid": 5077
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fragmentation-mode-ack-always",
+      "status": "unstable",
+      "sid": 5078
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fragmentation-mode-ack-on-error",
+      "status": "unstable",
+      "sid": 5079
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fragmentation-mode-base-type",
+      "status": "unstable",
+      "sid": 5080
+    },
+    {
+      "namespace": "identity",
+      "identifier": "fragmentation-mode-no-ack",
+      "status": "unstable",
+      "sid": 5081
+    },
+    {
+      "namespace": "identity",
+      "identifier": "mo-base-type",
+      "status": "unstable",
+      "sid": 5082
+    },
+    {
+      "namespace": "identity",
+      "identifier": "mo-equal",
+      "status": "unstable",
+      "sid": 5083
+    },
+    {
+      "namespace": "identity",
+      "identifier": "mo-ignore",
+      "status": "unstable",
+      "sid": 5084
+    },
+    {
+      "namespace": "identity",
+      "identifier": "mo-match-mapping",
+      "status": "unstable",
+      "sid": 5085
+    },
+    {
+      "namespace": "identity",
+      "identifier": "mo-msb",
+      "status": "unstable",
+      "sid": 5086
+    },
+    {
+      "namespace": "identity",
+      "identifier": "nature-base-type",
+      "status": "unstable",
+      "sid": 5087
+    },
+    {
+      "namespace": "identity",
+      "identifier": "nature-compression",
+      "status": "unstable",
+      "sid": 5088
+    },
+    {
+      "namespace": "identity",
+      "identifier": "nature-fragmentation",
+      "status": "unstable",
+      "sid": 5089
+    },
+    {
+      "namespace": "identity",
+      "identifier": "nature-no-compression",
+      "status": "unstable",
+      "sid": 5090
+    },
+    {
+      "namespace": "identity",
+      "identifier": "rcs-algorithm-base-type",
+      "status": "unstable",
+      "sid": 5091
+    },
+    {
+      "namespace": "identity",
+      "identifier": "rcs-crc32",
+      "status": "unstable",
+      "sid": 5092
+    },
+    {
+      "namespace": "feature",
+      "identifier": "compression",
+      "status": "unstable",
+      "sid": 5093
+    },
+    {
+      "namespace": "feature",
+      "identifier": "fragmentation",
+      "status": "unstable",
+      "sid": 5094
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc",
+      "status": "unstable",
+      "sid": 5095
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule",
+      "status": "unstable",
+      "sid": 5096
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/ack-behavior",
+      "status": "unstable",
+      "sid": 5097,
+      "type": "identityref"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/direction",
+      "status": "unstable",
+      "sid": 5098,
+      "type": "identityref"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/dtag-size",
+      "status": "unstable",
+      "sid": 5099,
+      "type": "uint8"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/entry",
+      "status": "unstable",
+      "sid": 5100
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/entry/comp-decomp-action",
+      "status": "unstable",
+      "sid": 5101,
+      "type": "identityref"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/entry/comp-decomp-action-value",
+      "status": "unstable",
+      "sid": 5102
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/entry/comp-decomp-action-value/index",
+      "status": "unstable",
+      "sid": 5103,
+      "type": "uint16"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/entry/comp-decomp-action-value/value",
+      "status": "unstable",
+      "sid": 5104,
+      "type": "binary"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/entry/direction-indicator",
+      "status": "unstable",
+      "sid": 5105,
+      "type": "identityref"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/entry/field-id",
+      "status": "unstable",
+      "sid": 5106,
+      "type": "identityref"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/entry/field-length",
+      "status": "unstable",
+      "sid": 5107,
+      "type": [
+        "uint8",
+        "schc:fl-type"
+      ]
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/entry/field-position",
+      "status": "unstable",
+      "sid": 5108,
+      "type": "uint8"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/entry/matching-operator",
+      "status": "unstable",
+      "sid": 5109,
+      "type": "identityref"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/entry/matching-operator-value",
+      "status": "unstable",
+      "sid": 5110
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/entry/matching-operator-value/index",
+      "status": "unstable",
+      "sid": 5111,
+      "type": "uint16"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/entry/matching-operator-value/value",
+      "status": "unstable",
+      "sid": 5112,
+      "type": "binary"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/entry/target-value",
+      "status": "unstable",
+      "sid": 5113
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/entry/target-value/index",
+      "status": "unstable",
+      "sid": 5114,
+      "type": "uint16"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/entry/target-value/value",
+      "status": "unstable",
+      "sid": 5115,
+      "type": "binary"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/fcn-size",
+      "status": "unstable",
+      "sid": 5116,
+      "type": "uint8"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/fragmentation-mode",
+      "status": "unstable",
+      "sid": 5117,
+      "type": "identityref"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/inactivity-timer",
+      "status": "unstable",
+      "sid": 5118
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/inactivity-timer/ticks-duration",
+      "status": "unstable",
+      "sid": 5119,
+      "type": "uint8"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/inactivity-timer/ticks-numbers",
+      "status": "unstable",
+      "sid": 5120,
+      "type": "uint16"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/l2-word-size",
+      "status": "unstable",
+      "sid": 5121,
+      "type": "uint8"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/max-ack-requests",
+      "status": "unstable",
+      "sid": 5122,
+      "type": "uint8"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/max-interleaved-frames",
+      "status": "unstable",
+      "sid": 5123,
+      "type": "uint8"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/maximum-packet-size",
+      "status": "unstable",
+      "sid": 5124,
+      "type": "uint16"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/rcs-algorithm",
+      "status": "unstable",
+      "sid": 5125,
+      "type": "identityref"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/retransmission-timer",
+      "status": "unstable",
+      "sid": 5126
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/retransmission-timer/ticks-duration",
+      "status": "unstable",
+      "sid": 5127,
+      "type": "uint8"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/retransmission-timer/ticks-numbers",
+      "status": "unstable",
+      "sid": 5128,
+      "type": "uint16"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/rule-id-length",
+      "status": "unstable",
+      "sid": 5129,
+      "type": "uint8"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/rule-id-value",
+      "status": "unstable",
+      "sid": 5130,
+      "type": "uint32"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/rule-nature",
+      "status": "unstable",
+      "sid": 5131,
+      "type": "identityref"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/tile-in-all-1",
+      "status": "unstable",
+      "sid": 5132,
+      "type": "identityref"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/tile-size",
+      "status": "unstable",
+      "sid": 5133,
+      "type": "uint8"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/w-size",
+      "status": "unstable",
+      "sid": 5134,
+      "type": "uint8"
+    },
+    {
+      "namespace": "data",
+      "identifier": "/ietf-schc:schc/rule/window-size",
+      "status": "unstable",
+      "sid": 5135,
+      "type": "uint16"
+    }
+  ],
+  "key-mapping": {
+    "5096": [
+      5130,
+      5129
+    ],
+    "5100": [
+      5106,
+      5108,
+      5105
+    ],
+    "5113": [
+      5114
+    ],
+    "5110": [
+      5111
+    ],
+    "5102": [
+      5103
+    ]
+  }
+}

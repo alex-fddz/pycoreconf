@@ -6,7 +6,7 @@ class ModelSID:
     """
 
     def __init__(self, *sid_files):
-        self.sid_files = sid_files
+        self.sid_files = sid_files # a tuple of modules' .sid files
         self.sids, self.types, self.name = self.getSIDsAndTypes() #req. ltn22/pyang
         self.ids = {v: k for k, v in self.sids.items()} # {sid:id}
 
@@ -33,11 +33,12 @@ class ModelSID:
                 if "type" in item.keys():
                     types[item["identifier"]] = item["type"]
 
-            # tmp while single module support:
+            # Save module name (sid1, sid2, ...) : [name1, name2, ...]
             names.append(obj["module-name"])
 
         # NOTE IF there are multiple SID files, the names will be concatenated
         # Concatenate all the names separated by a comma
+        # This breaks in pycoreconf.py line 96: keep 'names' list | associate name to sids?
         name = ', '.join(names)
         print("SIDS ", len(sids), len(types))
         return sids, types, name
