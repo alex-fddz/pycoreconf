@@ -1,0 +1,61 @@
+module pokemon {
+
+yang-version 1.1;
+
+namespace "https://www.plido.net/pokemons";
+prefix pokemons;
+
+identity move-base-type {
+description "Identify pokemon attacks ";
+}
+
+identity move-absorb {
+base move-base-type;
+}
+
+identity move-amnesia {
+base move-base-type;
+}
+
+typedef move-type {
+type identityref {
+base move-base-type;
+}
+}
+
+container card {
+leaf name {
+type string {
+length "1..10";
+}
+mandatory true;
+description "name appearing on top of the card";
+}
+
+leaf hit-point {
+    type uint32;
+    mandatory true;
+    description "hit points on top of the card";
+}
+
+list moves {
+    key move;
+    leaf move {
+        type move-type;
+    }
+    leaf power {
+        must "derived-from-or-self(../move, 'move-amnesia')"{
+            error-message "Power is for Amnesia move only.";
+        } 
+        type uint8;
+    }
+    leaf accuracy {
+        type uint8;
+    }
+    leaf power-point {
+        type uint8;
+    }
+}
+
+}
+}
