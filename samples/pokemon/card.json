@@ -1,0 +1,19 @@
+{
+  "pokemon:card": {
+    "name": "Pikachu",
+    "hit-point": 60,
+    "moves": [
+      {
+        "move": "pokemon:move-absorb",
+        "accuracy": 10,
+        "power-point": 100
+      },
+      {
+        "move": "pokemon:move-amnesia",
+        "power": 110,
+        "accuracy": 10,
+        "power-point": 100
+      }
+    ]
+  }
+}
