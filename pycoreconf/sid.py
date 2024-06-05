@@ -22,7 +22,12 @@ class ModelSID:
         # Get items & map identifier : sid and leafIdentifier : typename
         sids = {} # init
         types = {} # init
-        items = obj["item"] # list
+        items = obj.get("item") # list
+        
+        # Old SID models have "items" instead of "item" as key
+        if not items:
+            items = obj["items"] 
+
         for item in items:
             sids[item["identifier"]] = item["sid"]
             if "type" in item.keys():
