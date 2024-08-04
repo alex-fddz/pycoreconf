@@ -9,7 +9,7 @@ class ModelSID:
         self.sid_file = sid_file
         self.sids, self.types, self.name = self.getSIDsAndTypes() #req. ltn22/pyang
         self.ids = {v: k for k, v in self.sids.items()} # {sid:id}
-        self.moduleName = self.getModuleName
+        self.moduleName = self.getModuleName()
 
     def getModuleName(self):
         """
