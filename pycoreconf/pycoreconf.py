@@ -190,7 +190,7 @@ class CORECONFModel(ModelSID):
 
         # Transform to CORECONF/CBOR
         # valid = validateConfig(py_dict) #  ?
-        cc = self.lookupSIDWithoutRecursion(py_dict)
+        cc = self.lookupSIDWithoutRecursion(py_dict, path=self.moduleName)
         return cbor.dumps(cc)
 
     def lookupIdentifier(self, obj, delta=0, path="/"):

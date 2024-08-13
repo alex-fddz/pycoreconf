@@ -9,6 +9,18 @@ class ModelSID:
         self.sid_file = sid_file
         self.sids, self.types, self.name = self.getSIDsAndTypes() #req. ltn22/pyang
         self.ids = {v: k for k, v in self.sids.items()} # {sid:id}
+        self.moduleName = self.getModuleName()
+
+    def getModuleName(self):
+        """
+        Some SID with non-empty module-names are then used to fetch SID names while looking up SID
+        """
+        f = open(self.sid_file, "r")
+        obj = json.load(f)
+        f.close()
+        moduleName = obj.get("module-name")
+        formattedModuleName = "/%s:"%moduleName
+        return formattedModuleName
 
     def getSIDsAndTypes(self):
         """
@@ -22,7 +34,12 @@ class ModelSID:
         # Get items & map identifier : sid and leafIdentifier : typename
         sids = {} # init
         types = {} # init
-        items = obj["item"] # list
+        items = obj.get("item") # list
+        
+        # Old SID models have "items" instead of "item" as key
+        if not items:
+            items = obj["items"] 
+
         for item in items:
             sids[item["identifier"]] = item["sid"]
             if "type" in item.keys():
