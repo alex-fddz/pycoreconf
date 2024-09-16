@@ -35,10 +35,10 @@ class ModelSID:
         sids = {} # init
         types = {} # init
         items = obj.get("item") # list
-        
+
         # Old SID models have "items" instead of "item" as key
         if not items:
-            items = obj["items"] 
+            items = obj["items"]
 
         for item in items:
             sids[item["identifier"]] = item["sid"]
@@ -62,7 +62,12 @@ class ModelSID:
 
         # Get items & map identifier : sid
         ids = {} # init
-        items = obj["item"] # list
+        items = obj.get("item") # list
+
+        # Old SID models have "items" instead of "item" as key
+        if not items:
+            items = obj["items"]
+
         for item in items:
             ids[item["sid"]] = item["identifier"]
 
@@ -79,7 +84,12 @@ class ModelSID:
 
         # Get items & map identifier : sid
         sids = {} # init
-        items = obj["item"] # list
+        items = obj.get("item") # list
+
+        # Old SID models have "items" instead of "item" as key
+        if not items:
+            items = obj["items"]
+
         for item in items:
             sids[item["identifier"]] = item["sid"]
 
