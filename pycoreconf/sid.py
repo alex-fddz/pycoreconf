@@ -1,4 +1,6 @@
 import json
+from types import NoneType
+from typing import Dict, List, Union
 
 class ModelSID:
     """
@@ -10,6 +12,7 @@ class ModelSID:
         self.sids, self.types, self.name = self.getSIDsAndTypes() #req. ltn22/pyang
         self.ids = {v: k for k, v in self.sids.items()} # {sid:id}
         self.moduleName = self.getModuleName()
+        self.key_mapping: Dict = self.__set_key_mapping__(sid_filename=sid_file)
 
     def getModuleName(self):
         """
@@ -94,3 +97,17 @@ class ModelSID:
             sids[item["identifier"]] = item["sid"]
 
         return sids
+
+    def __set_key_mapping__(self, sid_filename: str) -> Union[Dict, NoneType]:
+        with open(file=sid_filename, mode='r') as file:
+            obj: Dict = json.load(file)
+
+        key_mapping: Union[Dict, NoneType] = None
+        
+        try:
+            key_mapping = obj['key-mapping']
+        except:
+            print(f"{sid_filename} sid files has not been generated with the --sid-extention options.\n" \
+                  + "Some conversion capabilities may not works. see http://github.com/ltn22/pyang")
+        finally:
+            return key_mapping
