@@ -12,7 +12,7 @@ class ModelSID:
         self.sids, self.types, self.name = self.getSIDsAndTypes() #req. ltn22/pyang
         self.ids = {v: k for k, v in self.sids.items()} # {sid:id}
         self.moduleName = self.getModuleName()
-        self.key_mapping: Dict = self.__set_key_mapping__(sid_filename=sid_file)
+        self.key_mapping: Dict = self._set_key_mapping(sid_filename=sid_file)
 
     def getModuleName(self):
         """
@@ -98,7 +98,7 @@ class ModelSID:
 
         return sids
 
-    def __set_key_mapping__(self, sid_filename: str) -> Union[Dict, NoneType]:
+    def _set_key_mapping(self, sid_filename: str) -> Union[Dict, NoneType]:
         with open(file=sid_filename, mode='r') as file:
             obj: Dict = json.load(file)
 
