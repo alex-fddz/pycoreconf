@@ -7,7 +7,7 @@ class ModelSID:
 
     def __init__(self, *sid_files):
         self.sid_files = sid_files # a tuple of modules' .sid files
-        self.sids, self.types, self.name = self.getSIDsAndTypes() #req. ltn22/pyang
+        self.sids, self.types = self.getSIDsAndTypes() #req. ltn22/pyang
         self.ids = {v: k for k, v in self.sids.items()} # {sid:id}
 
     def getSIDsAndTypes(self):
@@ -16,7 +16,6 @@ class ModelSID:
         """
         sids = {} # init
         types = {} # init
-        names = []
 
         for sid_file in self.sid_files:
             
@@ -26,22 +25,22 @@ class ModelSID:
             f.close()
 
             # Get items & map identifier : sid and leafIdentifier : typename
-
             items = obj["item"] # list
             for item in items:
-                sids[item["identifier"]] = item["sid"]
+
+                if item["namespace"] == "identity": # save as module-name:identity
+                    sids[obj["module-name"] +":"+ item["identifier"]] = item["sid"]
+
+                else:
+                    sids[item["identifier"]] = item["sid"]
+
                 if "type" in item.keys():
                     types[item["identifier"]] = item["type"]
 
-            # Save module name (sid1, sid2, ...) : [name1, name2, ...]
-            names.append(obj["module-name"])
-
-        # NOTE IF there are multiple SID files, the names will be concatenated
-        # Concatenate all the names separated by a comma
-        # This breaks in pycoreconf.py line 96: keep 'names' list | associate name to sids?
-        name = ', '.join(names)
-        print("SIDS ", len(sids), len(types))
-        return sids, types, name
+            # Save module name & ranges = {'module-name': [(start, end)], ...} ?
+            # ranges[obj["module-name"]] = _parse_assignment_ranges(obj)
+            
+        return sids, types
 
 
     def getIdentifiers(self):

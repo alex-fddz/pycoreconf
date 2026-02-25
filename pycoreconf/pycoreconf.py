@@ -45,7 +45,7 @@ class CORECONFModel(ModelSID):
         
         self.model_description_file = model_description_file
         self.yang_ietf_modules_paths = ["."]
-        ModelSID.__init__(self, *sid_files)
+        super().__init__(*sid_files)
 
     def add_modules_path(self, path):
         """
@@ -87,14 +87,8 @@ class CORECONFModel(ModelSID):
                 return bool(obj) 
             elif dtype == "inet:uri":
                 return str(obj)
-            elif dtype == "identityref": # look 'module:identity' in sids 
-                if encoding:
-                    idref_val = obj.split(":")
-                    ref_mod, ref_id = idref_val[0], idref_val[1] # only supports 1 module for now
-                    return self.sids[ref_id]
-                else: # sid -> "module:identityref"
-                    idref_val = self.name +":"+ self.ids[obj] 
-                    return idref_val
+            elif dtype == "identityref": # sid <-> 'module:identity'
+                return self.sids[obj] if encoding else self.ids[obj]
             elif dtype in ["empty", "leafref", "instance-identifier", "bits"]: # just return obj
                 # print("[-]", dtype, ": Returning as is." )
                 return obj
@@ -105,7 +99,7 @@ class CORECONFModel(ModelSID):
                 dtype = {v: int(k) for k, v in dtype.items()}
             return dtype[str(obj)]
         elif type(dtype) is list: # union 
-            print("[-] Union: Returning as is.")
+            # print("[-] Union: Returning as is.")
             return obj
         return obj
 
