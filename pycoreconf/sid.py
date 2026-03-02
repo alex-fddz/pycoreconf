@@ -9,20 +9,7 @@ class ModelSID:
         self.sid_files: tuple = sid_files # .sid file paths
         self.sids, self.types = self.getSIDsAndTypes() #req. ltn22/pyang
         self.ids = {v: k for k, v in self.sids.items()} # {sid:id}
-        self.moduleName = self.getModuleName() # XXX: Remove?
         self.key_mapping = self._set_key_mapping(sid_files)
-
-    def getModuleName(self):
-        """
-        Some SID with non-empty module-names are then used to fetch SID names while looking up SID
-        """
-        return "/"
-        # f = open(self.sid_file, "r")
-        # obj = json.load(f)
-        # f.close()
-        # moduleName = obj.get("module-name")
-        # formattedModuleName = "/%s:"%moduleName
-        # return formattedModuleName
 
     def getSIDsAndTypes(self):
         """
