@@ -112,8 +112,14 @@ class ModelSID:
             with open(sid_filename, mode='r') as f:
                 obj = json.load(f)
 
+            # Update for new SID format (XXX: refactor).
+            if len(obj) == 1 and list(obj.keys())[0].endswith("sid-file"):
+                sid_data = list(obj.values())[0]  # RFC‑9595 standard container
+            else:
+                sid_data = obj  # legacy/non-standard format
+
             try:
-                km = obj['key-mapping']
+                km = sid_data['key-mapping']
                 key_mapping.update(km)
             except KeyError:
                 print(f"{sid_filename} has not been generated with the --sid-extension option.\n" \
