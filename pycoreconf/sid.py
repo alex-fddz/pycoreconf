@@ -11,6 +11,26 @@ class ModelSID:
         self.ids = {v: k for k, v in self.sids.items()} # {sid:id}
         self.key_mapping = self._set_key_mapping(sid_files)
 
+    def _load_sid_data(self, sid_filename):
+        """
+        Internal helper: load a SID file and return a tuple of (module_name, list_of_items, key_mapping).
+        """
+
+        with open(sid_filename, "r") as f:
+            obj = json.load(f)
+
+        if len(obj) == 1 and list(obj.keys())[0].endswith("sid-file"):
+            sid_data = list(obj.values())[0]  # RFC‑9595 standard container
+        else:
+            print(f"Warning: legacy/non-standard SID file loaded ({sid_filename}). Some features may not work properly.")
+            sid_data = obj  # legacy/non-standard format
+
+        items = sid_data.get("item") or sid_data.get("items", [])
+        module_name = sid_data.get("module-name", "unknown")
+        key_mapping = sid_data.get("key-mapping", None)
+
+        return module_name, items, key_mapping
+
     def getSIDsAndTypes(self):
         """
         Read SID file and return { identifier : sid } + { identifier : type } dictionaries.
@@ -18,22 +38,15 @@ class ModelSID:
         sids = {} # init
         types = {} # init
 
-        for sid_file in self.sid_files:
+        for sid_filename in self.sid_files:
             
-            # Read the contents of the sid/json files
-            f = open(sid_file, "r")
-            obj = json.load(f)
-            f.close()
-
-            # Get items & map identifier : sid and leafIdentifier : typename
-            items = obj.get("item") # list
-            if not items: # Old SID models have "items" instead of "item" as key
-                items = obj["items"]
+            # Read the contents of the sid files
+            module_name, items, _ = self._load_sid_data(sid_filename)
 
             for item in items:
 
                 if item["namespace"] == "identity": # save as module-name:identity
-                    sids[obj["module-name"] +":"+ item["identifier"]] = item["sid"]
+                    sids[module_name +":"+ item["identifier"]] = item["sid"] # XXX: use formatted string for better readability.
 
                 else:
                     sids[item["identifier"]] = item["sid"]
@@ -54,22 +67,15 @@ class ModelSID:
 
         ids = {} # init
 
-        for sid_file in self.sid_files:
+        for sid_filename in self.sid_files:
 
-            # Read the contents of the sid/json file
-            f = open(sid_file, "r")
-            obj = json.load(f)
-            f.close()
-
-            # Get items & map identifier : sid
-            items = obj.get("item") # list
-            if not items: # Old SID models have "items" instead of "item" as key
-                items = obj["items"]
+            # Read the contents of the sid files
+            module_name, items, _ = self._load_sid_data(sid_filename)
 
             for item in items:
 
                 if item["namespace"] == "identity": # save as module-name:identity
-                    ids[item["sid"]] = obj["module-name"] +":"+ item["identifier"]
+                    ids[item["sid"]] = module_name +":"+ item["identifier"]
 
                 else:
                     ids[item["sid"]] = item["identifier"]
@@ -83,21 +89,15 @@ class ModelSID:
 
         sids = {} # init
 
-        for sid_file in self.sid_files:
-            # Read the contents of the sid/json file
-            f = open(sid_file, "r")
-            obj = json.load(f)
-            f.close()
+        for sid_filename in self.sid_files:
 
-            # Get items & map identifier : sid
-            items = obj.get("item") # list
-            if not items: # Old SID models have "items" instead of "item" as key
-                items = obj["items"]
+            # Read the contents of the sid files
+            module_name, items = self._load_sid_data(sid_filename)
 
             for item in items:
 
                 if item["namespace"] == "identity": # save as module-name:identity
-                    sids[obj["module-name"] +":"+ item["identifier"]] = item["sid"]
+                    sids[module_name +":"+ item["identifier"]] = item["sid"]
 
                 else:
                     sids[item["identifier"]] = item["sid"]
