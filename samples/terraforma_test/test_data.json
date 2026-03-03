@@ -1,0 +1,84 @@
+{
+  "atmos-41-weather-station:measurements": {
+    "measurement": [
+      {
+        "type": "atmos-41-weather-station:wind-direction",
+        "id": 2,
+        "value": 3293,
+        "precision": 1,
+        "unit": "degrees",
+        "min": 3269,
+        "max": 3320,
+        "mean": 3301,
+        "median": 3297,
+        "stdev": 72,
+        "sample-count": 3650
+      },
+      {
+        "type": "atmos-41-weather-station:strike-count",
+        "id": 2,
+        "value": 21,
+        "precision": 2,
+        "unit": "count",
+        "min": 9,
+        "max": 54,
+        "mean": 13,
+        "median": 8,
+        "stdev": 64,
+        "sample-count": 4593
+      },
+      {
+        "type": "atmos-41-weather-station:tilt",
+        "id": 1,
+        "value": 845,
+        "precision": 0,
+        "unit": "degrees",
+        "min": 802,
+        "max": 847,
+        "mean": 835,
+        "median": 841,
+        "stdev": 33,
+        "sample-count": 9154
+      },
+      {
+        "type": "atmos-41-weather-station:average-distance",
+        "id": 1,
+        "value": 343,
+        "precision": 1,
+        "unit": "km",
+        "min": 331,
+        "max": 393,
+        "mean": 335,
+        "median": 352,
+        "stdev": 79,
+        "sample-count": 8020
+      },
+      {
+        "type": "atmos-41-weather-station:precipitation",
+        "id": 0,
+        "value": 399,
+        "precision": 1,
+        "unit": "mm",
+        "min": 378,
+        "max": 403,
+        "mean": 391,
+        "median": 397,
+        "stdev": 61,
+        "sample-count": 3492
+      },
+      {
+        "type": "atmos-41-weather-station:air-temperature",
+        "id": 3,
+        "value": 82,
+        "precision": 0,
+        "unit": "C",
+        "min": 43,
+        "max": 116,
+        "mean": 80,
+        "median": 85,
+        "stdev": 54,
+        "sample-count": 8970
+      }
+    ]
+  }
+}
