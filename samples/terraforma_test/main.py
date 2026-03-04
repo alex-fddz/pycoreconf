@@ -9,6 +9,8 @@ import os
 import json
 import random
 from datetime import datetime
+import cbor2 as cbor
+import pprint
 
 # Add parent directory to path to import pycoreconf
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -59,7 +61,7 @@ def generate_random_measurement(measurement_type, unit):
     
     return {
         "type": measurement_type,
-        "id": random.randint(0, 3),  # Multiple sensor instances
+        "id": 0,
         "value": raw_value,
         "precision": precision,
         "unit": unit,
@@ -95,6 +97,22 @@ def generate_test_data():
     return config
 
 
+def generate_full_sequence_data():
+    """Generate full test data with all available measurement types"""
+
+    measurements = []
+    for meas_type, unit in MEASUREMENT_TYPES.items():
+        measurements.append(generate_random_measurement(meas_type, unit))
+
+    config = {
+        "atmos-41-weather-station:measurements": {
+            "measurement": measurements
+        }
+    }
+
+    return config
+
+
 def main():
     """Main test function"""
     
@@ -119,16 +137,22 @@ def main():
         print(f"[-] Error loading SID file: {e}")
         sys.exit(1)
     
-    # Generate random test data
-    print("\n[*] Generating random test data...")
-    config_data = generate_test_data()
-    print("[+] Test data generated")
+    # Generate full test data (all measurement types)
+    print("\n[*] Generating full test data (all measurement types)...")
+    config_data = generate_full_sequence_data()
+    print(f"[+] Test data generated ({len(config_data['atmos-41-weather-station:measurements']['measurement'])} measurements)")
     
     # Save to JSON file
     json_file = os.path.join(os.path.dirname(__file__), "test_data.json")
     with open(json_file, 'w') as f:
         json.dump(config_data, f, indent=2)
     print(f"[+] JSON data saved to: {json_file}")
+
+    # Save the same data under an explicit full-sequence filename
+    full_json_file = os.path.join(os.path.dirname(__file__), "test_data_full.json")
+    with open(full_json_file, 'w') as f:
+        json.dump(config_data, f, indent=2)
+    print(f"[+] Full sequence JSON data saved to: {full_json_file}")
     
     # Display the JSON data
     print("\n[*] Generated JSON configuration:")
@@ -182,6 +206,20 @@ def main():
     print("Test completed successfully!")
     print("=" * 70)
 
+    pprint.pprint(cbor.loads(cbor_data), width=200)
+    sub_cbor = ccm.findSID(cbor.loads(cbor_data), sid=100025, keys = [100013, 0])
+    sub_tree_json = ccm.toJSON(cbor.dumps(sub_cbor) )
+
+    sub_tree = json.loads(sub_tree_json)
+
+    c = sub_tree["measurement"]["sample-count"]
+    c += 1
+
+    v = sub_tree["measurement"]["value"]/sub_tree["measurement"]["precision"]
+    print (c, v)
+
+
+    pprint.pprint(sub_tree, width=200)
 
 if __name__ == "__main__":
     main()
