@@ -202,7 +202,8 @@ class CORECONFModel(ModelSID):
 
                 value = self.lookupIdentifier(v, sid, identifier)    # dive in
 
-                json_dict[identifier.split("/")[-1]] = value
+                json_key = identifier[len(path):].lstrip("/")
+                json_dict[json_key] = value
             return json_dict
 
         elif type(obj) is list:
@@ -238,7 +239,7 @@ class CORECONFModel(ModelSID):
                     sid = key + currentDelta
                     # look for the original identifiers
                     identifier = self.ids[sid]
-                    nodeIdentifier = identifier.split("/")[-1]
+                    nodeIdentifier = identifier[len(currentPath):].lstrip("/")
                     currentValue[nodeIdentifier] = ValueClass(currentValue.pop(key))
                     stack.append((currentValue[nodeIdentifier], sid, identifier))
         
