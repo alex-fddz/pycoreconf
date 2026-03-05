@@ -210,63 +210,47 @@ class CORECONFDatabase:
         """
         import copy
         
-        segments = self._parse_xpath(xpath)
+        # Resolve the path
+        target_sid, keys = self._resolve_path(xpath)
+        target_path = self.model.ids.get(target_sid, '')
         
-        # Check if we're accessing a leaf within a list entry
-        has_leaf = len(segments) > 1 and not segments[-1][1]  # Last segment has no predicates
-        is_list_entry = len(segments) > 1 and segments[-2][1]  # Previous segment has predicates (it's a list)
+        # Check if this is a leaf (has type info in model)
+        is_leaf = target_path in self.model.types
         
-        if has_leaf and is_list_entry:
-            # Extract leaf name and build path to list entry instead
-            leaf_name = segments[-1][0]
+        # If it's a leaf and we're accessing it directly, get parent value and extract leaf
+        if is_leaf and keys:
+            # This is a leaf within a list entry
+            # Get the parent container instead
+            parent_path = '/'.join(target_path.split('/')[:-1])
+            parent_sid = self.model.sids.get(parent_path)
             
-            # Build xpath without the leaf
-            list_xpath_parts = []
-            for seg_name, predicates in segments[:-1]:
-                if predicates:
-                    pred_str = ''.join([f"[{k}='{v}']" for k, v in predicates.items()])
-                    list_xpath_parts.append(f"{seg_name}{pred_str}")
-                else:
-                    list_xpath_parts.append(seg_name)
-            list_xpath = "/" + "/".join(list_xpath_parts)
-            
-            try:
-                # Resolve the list entry path
-                target_sid, keys = self._resolve_path(list_xpath)
-                result = self.model.findSIDR(self.data, sid=target_sid, keys=keys)
-                
+            if parent_sid:
+                result = self.model.findSIDR(self.data, sid=parent_sid, keys=keys)
                 if result is None:
-                    raise KeyError(f"List entry not found: {list_xpath}")
+                    raise KeyError(f"Path not found or keys don't match: {xpath}")
                 
-                # Get and convert the entry
-                value = result[target_sid]
-                target_path = self.model.ids.get(target_sid, '')
+                value = result[parent_sid]
                 
-                if '/' in target_path:
-                    parent_path = '/'.join(target_path.split('/')[:-1]) + '/'
+                if '/' in parent_path:
+                    parent_parent_path = '/'.join(parent_path.split('/')[:-1]) + '/'
                 else:
-                    parent_path = '/'
+                    parent_parent_path = '/'
                 
-                # Make a deep copy before conversion
                 value_copy = copy.deepcopy(value)
+                wrapped = {parent_sid: value_copy}
+                self.model.lookupIdentifierWithoutRecursion(wrapped, delta=0, path=parent_parent_path)
                 
-                wrapped = {target_sid: value_copy}
-                self.model.lookupIdentifierWithoutRecursion(wrapped, delta=0, path=parent_path)
-                
-                node_identifier = target_path.split('/')[-1]
+                node_identifier = parent_path.split('/')[-1]
                 entry = wrapped.get(node_identifier, value_copy)
                 
                 # Extract the leaf from the entry
-                leaf_key = leaf_name.split(':')[-1]  # Remove module prefix
+                leaf_key = target_path.split('/')[-1]
                 if isinstance(entry, dict) and leaf_key in entry:
                     return entry[leaf_key]
                 else:
                     raise KeyError(f"Leaf '{leaf_key}' not found in entry")
-            except Exception as e:
-                raise KeyError(f"Leaf '{leaf_name}' access failed: {e}")
         
-        # Original path resolution for container queries
-        target_sid, keys = self._resolve_path(xpath)
+        # Default path resolution for container queries
         result = self.model.findSIDR(self.data, sid=target_sid, keys=keys)
         
         if result is None:
@@ -274,9 +258,6 @@ class CORECONFDatabase:
         
         # Unwrap the {sid: value} dict
         value = result[target_sid]
-        
-        # Get the target path and its parent path
-        target_path = self.model.ids.get(target_sid, '')
         
         if '/' in target_path:
             parent_path = '/'.join(target_path.split('/')[:-1]) + '/'
