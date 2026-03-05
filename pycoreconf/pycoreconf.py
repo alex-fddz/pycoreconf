@@ -186,11 +186,16 @@ class CORECONFDatabase:
                                 key_value = int(key_value)
                             elif dtype == 'identityref':
                                 # Convert identity name to SID
-                                identity_path = "/" + key_value if not key_value.startswith("/") else key_value
-                                if identity_path in self.model.sids:
-                                    key_value = self.model.sids[identity_path]
+                                # Try without leading slash first
+                                if key_value in self.model.sids:
+                                    key_value = self.model.sids[key_value]
                                 else:
-                                    raise ValueError(f"Identity not found in model: {key_value}")
+                                    # Try with leading slash
+                                    identity_path = "/" + key_value
+                                    if identity_path in self.model.sids:
+                                        key_value = self.model.sids[identity_path]
+                                    else:
+                                        raise ValueError(f"Identity not found in model: {key_value}")
                     
                     key_values.append(key_value)
         
