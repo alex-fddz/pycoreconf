@@ -206,20 +206,88 @@ def main():
     print("Test completed successfully!")
     print("=" * 70)
 
-    pprint.pprint(cbor.loads(cbor_data), width=200)
-    sub_cbor = ccm.findSID(cbor.loads(cbor_data), sid=100025, keys = [100013, 0])
-    sub_tree_json = ccm.toJSON(cbor.dumps(sub_cbor) )
-
-    sub_tree = json.loads(sub_tree_json)
-
-    c = sub_tree["measurement"]["sample-count"]
-    c += 1
-
-    v = sub_tree["measurement"]["value"]/sub_tree["measurement"]["precision"]
-    print (c, v)
-
-
-    pprint.pprint(sub_tree, width=200)
+    # Test new high-level database API
+    print("\n" + "=" * 70)
+    print("Testing CORECONFDatabase API")
+    print("=" * 70)
+    
+    # Load CBOR data into database
+    print("\n[*] Loading CBOR data into database...")
+    db = ccm.loadDB(cbor_data)
+    print("[+] Database loaded")
+    
+    # Test reading a value with list keys
+    print("\n[*] Reading value with path: ['measurement', (100025, 0), 'sample-count']")
+    try:
+        sample_count = db["measurement", (100025, 0), "sample-count"]
+        print(f"[+] sample-count = {sample_count}")
+    except Exception as e:
+        print(f"[-] Error reading: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    # Test reading another value
+    print("\n[*] Reading value with path: ['measurement', (100025, 0), 'value']")
+    try:
+        value = db["measurement", (100025, 0), "value"]
+        print(f"[+] value = {value}")
+    except Exception as e:
+        print(f"[-] Error reading: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    # Test reading precision
+    print("\n[*] Reading value with path: ['measurement', (100025, 0), 'precision']")
+    try:
+        precision = db["measurement", (100025, 0), "precision"]
+        print(f"[+] precision = {precision}")
+        
+        # Calculate actual value
+        if precision > 0:
+            actual_value = value / (10 ** precision)
+            print(f"[+] Actual value: {actual_value}")
+    except Exception as e:
+        print(f"[-] Error reading: {e}")
+    
+    # Test writing a value
+    print("\n[*] Writing new sample-count value...")
+    try:
+        new_count = sample_count + 1
+        db["measurement", (100025, 0), "sample-count"] = new_count
+        print(f"[+] Set sample-count to {new_count}")
+        
+        # Verify the write
+        verify_count = db["measurement", (100025, 0), "sample-count"]
+        print(f"[+] Verified sample-count = {verify_count}")
+        
+        if verify_count == new_count:
+            print("[+] SUCCESS: Write operation confirmed!")
+        else:
+            print("[!] WARNING: Read value doesn't match written value")
+    except Exception as e:
+        print(f"[-] Error writing: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    # Export modified data
+    print("\n[*] Exporting modified data...")
+    try:
+        modified_cbor = db.to_cbor()
+        print(f"[+] CBOR exported, size: {len(modified_cbor)} bytes")
+        
+        modified_json = db.to_json()
+        print("[+] JSON exported:")
+        print("-" * 70)
+        print(json.dumps(json.loads(modified_json), indent=2))
+        print("-" * 70)
+    except Exception as e:
+        print(f"[-] Error exporting: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    print("\n" + "=" * 70)
+    print("Database API test completed!")
+    print("=" * 70)
 
 if __name__ == "__main__":
     main()
