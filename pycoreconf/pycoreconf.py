@@ -38,8 +38,8 @@ def unwrapValues(object):
 
 class CORECONFDatabase:
     """
-    High-level interface to navigate and modify CORECONF data using YANG paths.
-    Usage: db["measurements", (100025, 0), "value"]
+    High-level interface to navigate and modify CORECONF data using XPath-like paths.
+    Usage: db["/measurements/measurement[type='solar-radiation'][id='0']/value"]
     """
     
     def __init__(self, model, cbor_data):
@@ -52,115 +52,163 @@ class CORECONFDatabase:
         """
         self.model = model
         self.data = cbor.loads(cbor_data) if isinstance(cbor_data, bytes) else cbor_data
-        
-        # Build reverse mapping: YANG name -> SID for fast lookup
-        self._name_to_sid = {}
-        for path, sid in self.model.sids.items():
-            # Extract leaf name from path (e.g., "/module:container/leaf" -> "leaf")
-            parts = path.rstrip('/').split('/')
-            if parts:
-                leaf_name = parts[-1].split(':')[-1]  # Remove module prefix
-                self._name_to_sid[leaf_name] = (sid, path)
     
-    def _parse_path(self, path):
+    def _parse_xpath(self, xpath):
         """
-        Parse navigation path into (target_sid, keys).
+        Parse XPath-like expression into segments and predicates.
         
         Args:
-            path: tuple like ("measurements", (100025, 0), "value")
-                  - strings are YANG element names
-                  - tuples are list keys
+            xpath: string like "/measurements/measurement[type='solar-radiation'][id='0']/value"
         
         Returns:
-            (target_sid, keys_list)
+            List of (segment_name, predicates_dict) tuples
+            Example: [('measurements', {}), ('measurement', {'type': 'solar-radiation', 'id': '0'}), ('value', {})]
         """
-        if not isinstance(path, tuple):
-            path = (path,)
+        import re
         
-        yang_elements = []
-        keys = []
+        # Remove leading slash
+        xpath = xpath.lstrip('/')
         
-        for element in path:
-            if isinstance(element, str):
-                # YANG name to add to path
-                yang_elements.append(element)
-            elif isinstance(element, tuple):
-                # List keys to filter
-                keys.extend(element)
+        # Split by / but keep predicates with their segment
+        segments = []
+        for part in xpath.split('/'):
+            if not part:
+                continue
+            
+            # Extract segment name and predicates
+            # Format: segment[key1='value1'][key2='value2']
+            match = re.match(r'^([^[]+)(.*)', part)
+            if not match:
+                continue
+            
+            segment_name = match.group(1).strip()
+            predicates_str = match.group(2)
+            
+            # Parse predicates
+            predicates = {}
+            if predicates_str:
+                pred_pattern = r"\[([^=]+)='([^']+)'\]"
+                for pred_match in re.finditer(pred_pattern, predicates_str):
+                    key_name = pred_match.group(1).strip()
+                    key_value = pred_match.group(2).strip()
+                    predicates[key_name] = key_value
+            
+            segments.append((segment_name, predicates))
         
-        # Build path incrementally, trying to match against model
+        return segments
+    
+    def _resolve_path(self, xpath):
+        """
+        Resolve XPath to (target_sid, key_values).
+        
+        Args:
+            xpath: XPath string
+        
+        Returns:
+            (target_sid, list_of_key_values)
+        """
+        segments = self._parse_xpath(xpath)
+        
         yang_path = ""
-        for i, elem in enumerate(yang_elements):
-            if i == 0:
-                # Root element - try with and without module prefix
-                test_path = "/" + elem
-                print(f"[DEBUG] Testing root: {test_path}")
+        key_values = []
+        
+        for segment_name, predicates in segments:
+            # Build YANG path progressively
+            if not yang_path:
+                # Root element
+                test_path = "/" + segment_name
                 if test_path in self.model.sids:
                     yang_path = test_path
-                    print(f"[DEBUG] Found exact match: {yang_path}")
                 else:
-                    # Try to find with module prefix
+                    # Try with module prefix
                     for sid_path in self.model.sids.keys():
-                        if sid_path.endswith(":" + elem) or sid_path == "/" + elem:
+                        if sid_path.endswith(":" + segment_name):
                             yang_path = sid_path
-                            print(f"[DEBUG] Found with prefix: {yang_path}")
                             break
                     if not yang_path:
-                        raise KeyError(f"Root element not found in model: {elem}")
+                        raise KeyError(f"Root element not found: {segment_name}")
             else:
-                # Child elements
-                test_path = yang_path + "/" + elem
-                print(f"[DEBUG] Testing child: {test_path}")
+                # Child element
+                test_path = yang_path + "/" + segment_name
                 if test_path in self.model.sids:
                     yang_path = test_path
-                    print(f"[DEBUG] Found exact match: {yang_path}")
                 else:
                     # Try with module prefix
                     found = False
                     for sid_path in self.model.sids.keys():
-                        if sid_path.startswith(yang_path + "/") and sid_path.endswith(":" + elem):
+                        if sid_path.startswith(yang_path + "/") and (
+                            sid_path.endswith(":" + segment_name) or 
+                            sid_path == yang_path + "/" + segment_name
+                        ):
                             yang_path = sid_path
-                            print(f"[DEBUG] Found with prefix: {yang_path}")
-                            found = True
-                            break
-                        elif sid_path == yang_path + "/" + elem:
-                            yang_path = sid_path
-                            print(f"[DEBUG] Found exact: {yang_path}")
                             found = True
                             break
                     if not found:
-                        raise KeyError(f"Path element not found in model: {elem} (partial path: {yang_path})")
+                        raise KeyError(f"Path element not found: {segment_name} (current: {yang_path})")
+            
+            # Handle predicates (list keys)
+            if predicates:
+                current_sid = self.model.sids[yang_path]
+                
+                # Check if this is a list node
+                if str(current_sid) not in self.model.key_mapping:
+                    raise ValueError(f"Predicates specified for non-list element: {segment_name}")
+                
+                expected_keys = self.model.key_mapping[str(current_sid)]
+                
+                # Resolve predicate names to SIDs and extract values in correct order
+                for key_sid in expected_keys:
+                    # Find the YANG path for this key SID
+                    key_path = self.model.ids.get(key_sid)
+                    if not key_path:
+                        raise ValueError(f"Key SID not found in model: {key_sid}")
+                    
+                    # Extract leaf name (last part after /)
+                    key_name = key_path.rstrip('/').split('/')[-1].split(':')[-1]
+                    
+                    if key_name not in predicates:
+                        raise ValueError(f"Missing key predicate: {key_name}")
+                    
+                    # Get the value and convert type if needed
+                    key_value = predicates[key_name]
+                    
+                    # Try to convert to appropriate type
+                    # Check the data type from the model
+                    if key_path in self.model.types:
+                        dtype = self.model.types[key_path]
+                        if isinstance(dtype, str) and 'int' in dtype:
+                            key_value = int(key_value)
+                        # identityref stays as string
+                    
+                    key_values.append(key_value)
         
         target_sid = self.model.sids[yang_path]
-        print(f"[DEBUG] Final path: {yang_path} -> SID: {target_sid}")
-        return target_sid, keys
+        return target_sid, key_values
     
-    def __getitem__(self, path):
+    def __getitem__(self, xpath):
         """
-        Get value at path.
-        Example: db["measurements", (100025, 0), "value"]
+        Get value at XPath.
+        Example: db["/measurements/measurement[type='solar-radiation'][id='0']/value"]
         """
-        target_sid, keys = self._parse_path(path)
-        print(f"[DEBUG] Resolved path {path} -> SID={target_sid}, keys={keys}")
+        target_sid, keys = self._resolve_path(xpath)
         result = self.model.findSIDR(self.data, sid=target_sid, keys=keys)
-        print(f"[DEBUG] findSIDR returned: {result}")
         
         if result is None:
-            raise KeyError(f"Path not found or keys don't match: {path}")
+            raise KeyError(f"Path not found or keys don't match: {xpath}")
         
         # Unwrap the {sid: value} dict
         return result[target_sid]
     
-    def __setitem__(self, path, value):
+    def __setitem__(self, xpath, value):
         """
-        Set value at path.
-        Example: db["measurements", (100025, 0), "value"] = 42
+        Set value at XPath.
+        Example: db["/measurements/measurement[type='solar-radiation'][id='0']/value"] = 42
         """
-        target_sid, keys = self._parse_path(path)
+        target_sid, keys = self._resolve_path(xpath)
         result = self.model.findSIDR(self.data, sid=target_sid, keys=keys, value=value)
         
         if result is None:
-            raise KeyError(f"Path not found or keys don't match: {path}")
+            raise KeyError(f"Path not found or keys don't match: {xpath}")
     
     def to_cbor(self):
         """Export modified data back to CBOR."""
@@ -605,7 +653,7 @@ class CORECONFModel(ModelSID):
         
         Example:
             db = model.loadDB(cbor_data)
-            value = db["measurements", (100025, 0), "value"]
-            db["measurements", (100025, 0), "value"] = 42
+            value = db["/measurements/measurement[type='solar-radiation'][id='0']/value"]
+            db["/measurements/measurement[type='solar-radiation'][id='0']/value"] = 42
         """
         return CORECONFDatabase(self, cbor_data)
