@@ -94,37 +94,45 @@ class CORECONFDatabase:
             if i == 0:
                 # Root element - try with and without module prefix
                 test_path = "/" + elem
+                print(f"[DEBUG] Testing root: {test_path}")
                 if test_path in self.model.sids:
                     yang_path = test_path
+                    print(f"[DEBUG] Found exact match: {yang_path}")
                 else:
                     # Try to find with module prefix
                     for sid_path in self.model.sids.keys():
                         if sid_path.endswith(":" + elem) or sid_path == "/" + elem:
                             yang_path = sid_path
+                            print(f"[DEBUG] Found with prefix: {yang_path}")
                             break
                     if not yang_path:
                         raise KeyError(f"Root element not found in model: {elem}")
             else:
                 # Child elements
                 test_path = yang_path + "/" + elem
+                print(f"[DEBUG] Testing child: {test_path}")
                 if test_path in self.model.sids:
                     yang_path = test_path
+                    print(f"[DEBUG] Found exact match: {yang_path}")
                 else:
                     # Try with module prefix
                     found = False
                     for sid_path in self.model.sids.keys():
                         if sid_path.startswith(yang_path + "/") and sid_path.endswith(":" + elem):
                             yang_path = sid_path
+                            print(f"[DEBUG] Found with prefix: {yang_path}")
                             found = True
                             break
                         elif sid_path == yang_path + "/" + elem:
                             yang_path = sid_path
+                            print(f"[DEBUG] Found exact: {yang_path}")
                             found = True
                             break
                     if not found:
                         raise KeyError(f"Path element not found in model: {elem} (partial path: {yang_path})")
         
         target_sid = self.model.sids[yang_path]
+        print(f"[DEBUG] Final path: {yang_path} -> SID: {target_sid}")
         return target_sid, keys
     
     def __getitem__(self, path):
@@ -133,7 +141,9 @@ class CORECONFDatabase:
         Example: db["measurements", (100025, 0), "value"]
         """
         target_sid, keys = self._parse_path(path)
+        print(f"[DEBUG] Resolved path {path} -> SID={target_sid}, keys={keys}")
         result = self.model.findSIDR(self.data, sid=target_sid, keys=keys)
+        print(f"[DEBUG] findSIDR returned: {result}")
         
         if result is None:
             raise KeyError(f"Path not found or keys don't match: {path}")
