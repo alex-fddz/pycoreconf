@@ -275,14 +275,14 @@ class CORECONFModel(ModelSID):
         # Unwrap the ValueClass objects before returning
         return(unwrapValues(obj))
 
-    def findSID(self, obj, delta=0, path='/', sid=None, key=None):
+    def findSID(self, obj, sid=None, keys= [], delta=0,  path='/'):
         """
         Find a specific SID in the object and return its value.
         """
-        stack = [(ValueClass(obj), delta, path)]
+        stack = [(ValueClass(obj), delta, path, keys)]
 
         while stack:
-            currentObject, currentDelta, currentPath = stack.pop()
+            currentObject, currentDelta, currentPath, currentKeys = stack.pop()
             currentValue = currentObject.value
 
             # currentValue is a dict here, iterate through key/value pairs and add values to the stack
@@ -291,16 +291,61 @@ class CORECONFModel(ModelSID):
                 for key in keys:
                     # get full identifier path
                     
-                    sid = key + currentDelta
+                    p_sid = key + currentDelta
+                    print(sid, p_sid, key, currentPath)
+                    if sid is not None and sid == p_sid:
+                        found_value = currentValue[key]
+                        print("Found SID:", sid, "with value:", found_value)
+                        return {p_sid : found_value}
+
                     # look for the original identifiers
-                    identifier = self.ids[sid]
+                    identifier = self.ids[p_sid]
                     nodeIdentifier = identifier.split("/")[-1]
-                    currentValue[nodeIdentifier] = ValueClass(currentValue.pop(key))
-                    stack.append((currentValue[nodeIdentifier], sid, identifier))
+                    child_object = currentValue.pop(key)
+
+                    legacy_behavior = True # if True, will not check for list keys and will directly add the child object to the stack
+                    if type (child_object) is dict and len(child_object) == 1: # one element, check if is a list by looking at key_mapping
+                        child_key = next(iter(child_object))
+                        
+                        if str(child_key+key) in self.key_mapping:
+                            key_sids = self.key_mapping[str(child_key+key)]
+
+                            if len(key_sids) > len(currentKeys):
+                                raise ValueError("Not enough keys provided for list with key: " + str(child_key))
+                            else:
+                                first_key_values = currentKeys[:len(key_sids)]
+                                new_keys = currentKeys[len(key_sids):]
+
+                                match_keys = True
+                                for entry in child_object[child_key]:
+
+                                    for v, k_sid in zip(first_key_values, key_sids):
+                                        entry_element = entry[k_sid-key-child_key]
+                                        if entry_element != v:
+                                            match_found = False
+                                            break
+                                        match_found = True
+                                    
+                                    if match_found:
+                                        break
+
+                                if match_found:
+                                    recomposed_entry = {child_key+key : entry}
+                                    stack.append((ValueClass(recomposed_entry), delta, identifier, new_keys))
+                                    legacy_behavior = False
+                                    break
+                                else:
+                                    return None # No match found for the provided keys in the list, return None or raise an exception as needed
+                                    
+                    if legacy_behavior: # not a list 
+                        currentValue[nodeIdentifier] = ValueClass(child_object)
+                        stack.append((currentValue[nodeIdentifier], p_sid, identifier, keys))
         
             # currentValue is a list type, append each of the object in currentValue to the stack
             elif type(currentValue) is list:
+                print (currentValue)
                 for i in range(len(currentValue)):
+
                     currentValue[i] = ValueClass(currentValue[i])
                     stack.append((currentValue[i], currentDelta, currentPath))
 
