@@ -35,6 +35,106 @@ def unwrapValues(object):
 
     return object
 
+
+class CORECONFDatabase:
+    """
+    High-level interface to navigate and modify CORECONF data using YANG paths.
+    Usage: db["measurements", (100025, 0), "value"]
+    """
+    
+    def __init__(self, model, cbor_data):
+        """
+        Initialize database from CORECONF model and CBOR data.
+        
+        Args:
+            model: CORECONFModel instance
+            cbor_data: CBOR-encoded data (bytes)
+        """
+        self.model = model
+        self.data = cbor.loads(cbor_data) if isinstance(cbor_data, bytes) else cbor_data
+        
+        # Build reverse mapping: YANG name -> SID for fast lookup
+        self._name_to_sid = {}
+        for path, sid in self.model.sids.items():
+            # Extract leaf name from path (e.g., "/module:container/leaf" -> "leaf")
+            parts = path.rstrip('/').split('/')
+            if parts:
+                leaf_name = parts[-1].split(':')[-1]  # Remove module prefix
+                self._name_to_sid[leaf_name] = (sid, path)
+    
+    def _parse_path(self, path):
+        """
+        Parse navigation path into (target_sid, keys).
+        
+        Args:
+            path: tuple like ("measurements", (100025, 0), "value")
+                  - strings are YANG element names
+                  - tuples are list keys
+        
+        Returns:
+            (target_sid, keys_list)
+        """
+        if not isinstance(path, tuple):
+            path = (path,)
+        
+        yang_path = "/"
+        keys = []
+        
+        for element in path:
+            if isinstance(element, str):
+                # YANG name to add to path
+                yang_path += element + "/"
+            elif isinstance(element, tuple):
+                # List keys to filter
+                keys.extend(element)
+        
+        # Remove trailing slash and lookup SID
+        yang_path = yang_path.rstrip('/')
+        
+        # Try exact path first
+        if yang_path in self.model.sids:
+            target_sid = self.model.sids[yang_path]
+        else:
+            # Try with module prefix from the data
+            # For now, raise error if not found
+            raise KeyError(f"Path not found in model: {yang_path}")
+        
+        return target_sid, keys
+    
+    def __getitem__(self, path):
+        """
+        Get value at path.
+        Example: db["measurements", (100025, 0), "value"]
+        """
+        target_sid, keys = self._parse_path(path)
+        result = self.model.findSIDR(self.data, sid=target_sid, keys=keys)
+        
+        if result is None:
+            raise KeyError(f"Path not found or keys don't match: {path}")
+        
+        # Unwrap the {sid: value} dict
+        return result[target_sid]
+    
+    def __setitem__(self, path, value):
+        """
+        Set value at path.
+        Example: db["measurements", (100025, 0), "value"] = 42
+        """
+        target_sid, keys = self._parse_path(path)
+        result = self.model.findSIDR(self.data, sid=target_sid, keys=keys, value=value)
+        
+        if result is None:
+            raise KeyError(f"Path not found or keys don't match: {path}")
+    
+    def to_cbor(self):
+        """Export modified data back to CBOR."""
+        return cbor.dumps(self.data)
+    
+    def to_json(self):
+        """Export data as JSON string."""
+        return self.model.toJSON(self.to_cbor())
+
+
 class CORECONFModel(ModelSID):
     """A class to represent the YANG Model through its SID file, used
     to convert to and from CORECONF/CBOR representation."""
@@ -256,7 +356,7 @@ class CORECONFModel(ModelSID):
         # Unwrap the ValueClass objects before returning
         return(unwrapValues(obj))
 
-    def findSID(self, obj, sid=None, keys= [], delta=0,  path='/'):
+    def findSID(self, obj, sid=None, keys= [], value= None, delta=0,  path='/'):
         """
         Find a specific SID in the object and return its value.
         """
@@ -275,9 +375,14 @@ class CORECONFModel(ModelSID):
                     p_sid = key + currentDelta
                     print(sid, p_sid, key, currentPath)
                     if sid is not None and sid == p_sid:
-                        found_value = currentValue[key]
-                        print("Found SID:", sid, "with value:", found_value)
-                        return {p_sid : found_value}
+                        if value is None: # nothing to set, so return the value
+                            found_value = currentValue[key]
+                            print("Found SID:", sid, "with value:", found_value)
+                            return {p_sid : found_value}
+                        else: # set the value
+                            currentValue[key] = value
+                            print("Set SID:", sid, "to value:", value)
+                            return {p_sid : value}
 
                     # look for the original identifiers
                     identifier = self.ids[p_sid]
@@ -288,7 +393,7 @@ class CORECONFModel(ModelSID):
                     if type (child_object) is dict and len(child_object) == 1: # one element, check if is a list by looking at key_mapping
                         child_key = next(iter(child_object))
                         
-                        if str(child_key+key) in self.key_mapping:
+                        if str(child_key+key) in self.key_mapping: # we have a list so find the right entry in the list by comparing the provided keys with the keys of the entries in the list, then add the right entry to the stack
                             key_sids = self.key_mapping[str(child_key+key)]
 
                             if len(key_sids) > len(currentKeys):
@@ -338,6 +443,86 @@ class CORECONFModel(ModelSID):
         # Unwrap the ValueClass objects before returning
         return(unwrapValues(obj))
 
+    def findSIDR(self, obj, sid=None, keys=None, value=None, delta=0, path='/'):
+        """
+        Recursive SID lookup/setter that preserves the tree structure.
+        Returns {sid: value} when found, otherwise None.
+        """
+
+        if keys is None:
+            keys = []
+
+        def _walk(node, current_delta, current_path, remaining_keys):
+            if type(node) is dict:
+                for key in list(node.keys()):
+                    p_sid = key + current_delta
+                    identifier = self.ids[p_sid]
+                    
+                    # Check if this SID is a list key marker
+                    if str(p_sid) in self.key_mapping:
+                        # This is a list node, try to match keys
+                        key_sids = self.key_mapping[str(p_sid)]
+                        child_object = node[key]
+
+                        # child_object is directly a list of dictionaries
+                        if type(child_object) is list:
+                            if len(key_sids) > len(remaining_keys):
+                                raise ValueError("Not enough keys provided for list with key: " + str(p_sid))
+
+                            first_key_values = remaining_keys[:len(key_sids)]
+                            new_keys = remaining_keys[len(key_sids):]
+
+                            # Find matching list entry by comparing key values
+                            for entry in child_object:
+                                match_found = True
+                                for expected_value, k_sid in zip(first_key_values, key_sids):
+                                    entry_element = entry.get(k_sid - p_sid)
+                                    if entry_element != expected_value:
+                                        match_found = False
+                                        break
+
+                                if match_found:
+                                    # If this is the target SID, return the matched entry
+                                    if sid is not None and sid == p_sid:
+                                        if value is None:
+                                            return {p_sid: entry}
+                                        entry.update(value) if isinstance(value, dict) else entry
+                                        return {p_sid: entry}
+                                    
+                                    # Continue exploring within this entry
+                                    result = _walk(entry, p_sid, identifier, new_keys)
+                                    if result is not None:
+                                        return result
+                                    break
+                        continue
+
+                    # Regular node (not a list key)
+                    # Check if we found the target SID
+                    if sid is not None and sid == p_sid:
+                        if value is None:
+                            return {p_sid: node[key]}
+                        node[key] = value
+                        return {p_sid: value}
+
+                    # Regular node traversal
+                    child_object = node[key]
+                    result = _walk(child_object, p_sid, identifier, remaining_keys)
+                    if result is not None:
+                        return result
+
+                return None
+
+            if type(node) is list:
+                for element in node:
+                    result = _walk(element, current_delta, current_path, remaining_keys)
+                    if result is not None:
+                        return result
+                return None
+
+            return None
+
+        return _walk(obj, delta, path, keys)
+
       
 
     def toJSON(self, cbor_data, return_pydict=False): 
@@ -371,3 +556,20 @@ class CORECONFModel(ModelSID):
         data.validate()
         # print("Config validation OK.")
         return True
+
+    def loadDB(self, cbor_data):
+        """
+        Load CBOR data into a high-level database interface.
+        
+        Args:
+            cbor_data: CBOR-encoded data (bytes)
+        
+        Returns:
+            CORECONFDatabase instance for easy navigation and modification
+        
+        Example:
+            db = model.loadDB(cbor_data)
+            value = db["measurements", (100025, 0), "value"]
+            db["measurements", (100025, 0), "value"] = 42
+        """
+        return CORECONFDatabase(self, cbor_data)
