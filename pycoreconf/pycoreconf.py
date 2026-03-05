@@ -236,12 +236,12 @@ class CORECONFModel(ModelSID):
     to convert to and from CORECONF/CBOR representation."""
 
     def __init__(self, 
-                 *sid_files, 
-                 model_description_file=None):
+                 sid_files: list[str], 
+                 model_description_file: str = None):
         
         self.model_description_file = model_description_file
         self.yang_ietf_modules_paths = ["."]
-        super().__init__(*sid_files)
+        super().__init__(sid_files)
 
     def add_modules_path(self, path):
         """
@@ -398,7 +398,8 @@ class CORECONFModel(ModelSID):
 
                 value = self.lookupIdentifier(v, sid, identifier)    # dive in
 
-                json_dict[identifier.split("/")[-1]] = value
+                json_key = identifier[len(path):].lstrip("/")
+                json_dict[json_key] = value
             return json_dict
 
         elif type(obj) is list:
@@ -434,7 +435,7 @@ class CORECONFModel(ModelSID):
                     sid = key + currentDelta
                     # look for the original identifiers
                     identifier = self.ids[sid]
-                    nodeIdentifier = identifier.split("/")[-1]
+                    nodeIdentifier = identifier[len(currentPath):].lstrip("/")
                     currentValue[nodeIdentifier] = ValueClass(currentValue.pop(key))
                     stack.append((currentValue[nodeIdentifier], sid, identifier))
         

@@ -5,8 +5,8 @@ class ModelSID:
     Class to define methods for reading a YANG model SID file and hold values.
     """
 
-    def __init__(self, *sid_files):
-        self.sid_files: tuple = sid_files # .sid file paths
+    def __init__(self, sid_files: list[str]):
+        self.sid_files = sid_files # .sid file paths
         self.sids, self.types = self.getSIDsAndTypes() #req. ltn22/pyang
         self.ids = {v: k for k, v in self.sids.items()} # {sid:id}
         self.key_mapping = self._set_key_mapping(sid_files)
