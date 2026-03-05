@@ -208,7 +208,7 @@ def main():
 
     # Test new high-level database API
     print("\n" + "=" * 70)
-    print("Testing CORECONFDatabase API")
+    print("Testing CORECONFDatabase API (XPath-like syntax)")
     print("=" * 70)
     
     # Load CBOR data into database
@@ -217,9 +217,12 @@ def main():
     print("[+] Database loaded")
     
     # Test reading a value with list keys
-    print("\n[*] Reading value with path: ['measurements', 'measurement', (100025, 0), 'sample-count']")
+    # Note: 'type' is an identityref, so we use the identity name
+    # 'id' is an integer
+    xpath = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/sample-count"
+    print(f"\n[*] Reading value with XPath: {xpath}")
     try:
-        sample_count = db["measurements", "measurement", (100025, 0), "sample-count"]
+        sample_count = db[xpath]
         print(f"[+] sample-count = {sample_count}")
     except Exception as e:
         print(f"[-] Error reading: {e}")
@@ -227,9 +230,10 @@ def main():
         traceback.print_exc()
     
     # Test reading another value
-    print("\n[*] Reading value with path: ['measurements', 'measurement', (100025, 0), 'value']")
+    xpath_value = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/value"
+    print(f"\n[*] Reading value with XPath: {xpath_value}")
     try:
-        value = db["measurements", "measurement", (100025, 0), "value"]
+        value = db[xpath_value]
         print(f"[+] value = {value}")
     except Exception as e:
         print(f"[-] Error reading: {e}")
@@ -237,9 +241,10 @@ def main():
         traceback.print_exc()
     
     # Test reading precision
-    print("\n[*] Reading value with path: ['measurements', 'measurement', (100025, 0), 'precision']")
+    xpath_precision = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/precision"
+    print(f"\n[*] Reading value with XPath: {xpath_precision}")
     try:
-        precision = db["measurements", "measurement", (100025, 0), "precision"]
+        precision = db[xpath_precision]
         print(f"[+] precision = {precision}")
         
         # Calculate actual value
@@ -253,11 +258,11 @@ def main():
     print("\n[*] Writing new sample-count value...")
     try:
         new_count = sample_count + 1
-        db["measurements", "measurement", (100025, 0), "sample-count"] = new_count
+        db[xpath] = new_count
         print(f"[+] Set sample-count to {new_count}")
         
         # Verify the write
-        verify_count = db["measurements", "measurement", (100025, 0), "sample-count"]
+        verify_count = db[xpath]
         print(f"[+] Verified sample-count = {verify_count}")
         
         if verify_count == new_count:
