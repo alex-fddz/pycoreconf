@@ -203,6 +203,8 @@ class CORECONFDatabase:
         Example: db["/measurements/measurement[type='solar-radiation'][id='0']/value"]
         Returns values with YANG identifiers instead of SIDs.
         """
+        import copy
+        
         segments = self._parse_xpath(xpath)
         
         # Check if we're accessing a leaf within a list entry
@@ -240,11 +242,14 @@ class CORECONFDatabase:
                 else:
                     parent_path = '/'
                 
-                wrapped = {target_sid: value}
+                # Make a deep copy before conversion
+                value_copy = copy.deepcopy(value)
+                
+                wrapped = {target_sid: value_copy}
                 self.model.lookupIdentifierWithoutRecursion(wrapped, delta=0, path=parent_path)
                 
                 node_identifier = target_path.split('/')[-1]
-                entry = wrapped.get(node_identifier, value)
+                entry = wrapped.get(node_identifier, value_copy)
                 
                 # Extract the leaf from the entry
                 leaf_key = leaf_name.split(':')[-1]  # Remove module prefix
@@ -253,8 +258,7 @@ class CORECONFDatabase:
                 else:
                     raise KeyError(f"Leaf '{leaf_key}' not found in entry")
             except Exception as e:
-                print(f"[DEBUG] Error accessing leaf {leaf_name}: {e}")
-                raise
+                raise KeyError(f"Leaf '{leaf_name}' access failed: {e}")
         
         # Original path resolution for container queries
         target_sid, keys = self._resolve_path(xpath)
@@ -274,13 +278,16 @@ class CORECONFDatabase:
         else:
             parent_path = '/'
         
+        # Make a deep copy before conversion to avoid modifying self.data
+        value_copy = copy.deepcopy(value)
+        
         # Create wrapped structure and convert
-        wrapped = {target_sid: value}
+        wrapped = {target_sid: value_copy}
         self.model.lookupIdentifierWithoutRecursion(wrapped, delta=0, path=parent_path)
         
         # Extract converted value
         node_identifier = target_path.split('/')[-1]
-        return wrapped.get(node_identifier, wrapped.get(target_sid, value))
+        return wrapped.get(node_identifier, wrapped.get(target_sid, value_copy))
     
     def __setitem__(self, xpath, value):
         """
