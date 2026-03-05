@@ -1,78 +1,84 @@
 import json
-from types import NoneType
-from typing import Dict, List, Union
 
 class ModelSID:
     """
     Class to define methods for reading a YANG model SID file and hold values.
     """
 
-    def __init__(self, sid_file):
-        self.sid_file = sid_file
-        self.sids, self.types, self.name = self.getSIDsAndTypes() #req. ltn22/pyang
+    def __init__(self, sid_files: list[str]):
+        self.sid_files = sid_files # .sid file paths
+        self.sids, self.types = self.getSIDsAndTypes() #req. ltn22/pyang
         self.ids = {v: k for k, v in self.sids.items()} # {sid:id}
-        self.moduleName = self.getModuleName()
-        self.key_mapping: Dict = self._set_key_mapping(sid_filename=sid_file)
+        self.key_mapping = self._set_key_mapping(sid_files)
 
-    def getModuleName(self):
+    def _load_sid_data(self, sid_filename):
         """
-        Some SID with non-empty module-names are then used to fetch SID names while looking up SID
+        Internal helper: load a SID file and return a tuple of (module_name, list_of_items, key_mapping).
         """
-        f = open(self.sid_file, "r")
-        obj = json.load(f)
-        f.close()
-        moduleName = obj.get("module-name")
-        formattedModuleName = "/%s:"%moduleName
-        return formattedModuleName
+
+        with open(sid_filename, "r") as f:
+            obj = json.load(f)
+
+        if len(obj) == 1 and list(obj.keys())[0].endswith("sid-file"):
+            sid_data = list(obj.values())[0]  # RFC‑9595 standard container
+        else:
+            print(f"Warning: legacy/non-standard SID file loaded ({sid_filename}). Some features may not work properly.")
+            sid_data = obj  # legacy/non-standard format
+
+        items = sid_data.get("item") or sid_data.get("items", [])
+        module_name = sid_data.get("module-name", "unknown")
+        key_mapping = sid_data.get("key-mapping", None)
+
+        return module_name, items, key_mapping
 
     def getSIDsAndTypes(self):
         """
         Read SID file and return { identifier : sid } + { identifier : type } dictionaries.
         """
-        # Read the contents of the sid/json file
-        f = open(self.sid_file, "r")
-        obj = json.load(f)
-        f.close()
-
-        # Get items & map identifier : sid and leafIdentifier : typename
         sids = {} # init
         types = {} # init
-        items = obj.get("item") # list
 
-        # Old SID models have "items" instead of "item" as key
-        if not items:
-            items = obj["items"]
+        for sid_filename in self.sid_files:
+            
+            # Read the contents of the sid files
+            module_name, items, _ = self._load_sid_data(sid_filename)
 
-        for item in items:
-            sids[item["identifier"]] = item["sid"]
-            if "type" in item.keys():
-                types[item["identifier"]] = item["type"]
+            for item in items:
 
-        # tmp while single module support:
-        name = obj["module-name"]
+                if item["namespace"] == "identity": # save as module-name:identity
+                    sids[module_name +":"+ item["identifier"]] = int(item["sid"]) # XXX: use formatted string for better readability.
 
-        return sids, types, name
+                else:
+                    sids[item["identifier"]] = int(item["sid"])
+
+                if "type" in item.keys():
+                    types[item["identifier"]] = item["type"]
+
+            # Save module name & ranges = {'module-name': [(start, end)], ...} ?
+            # ranges[obj["module-name"]] = _parse_assignment_ranges(obj)
+            
+        return sids, types
 
 
     def getIdentifiers(self):
         """
         Read SID file and return { sid : identifier } dictionary.
         """
-        # Read the contents of the sid/json file
-        f = open(self.sid_file, "r")
-        obj = json.load(f)
-        f.close()
 
-        # Get items & map identifier : sid
         ids = {} # init
-        items = obj.get("item") # list
 
-        # Old SID models have "items" instead of "item" as key
-        if not items:
-            items = obj["items"]
+        for sid_filename in self.sid_files:
 
-        for item in items:
-            ids[item["sid"]] = item["identifier"]
+            # Read the contents of the sid files
+            module_name, items, _ = self._load_sid_data(sid_filename)
+
+            for item in items:
+
+                if item["namespace"] == "identity": # save as module-name:identity
+                    ids[item["sid"]] = module_name +":"+ item["identifier"]
+
+                else:
+                    ids[item["sid"]] = item["identifier"]
 
         return ids
 
@@ -80,34 +86,43 @@ class ModelSID:
         """
         Read SID file and return { identifier : sid } dictionary.
         """
-        # Read the contents of the sid/json file
-        f = open(self.sid_file, "r")
-        obj = json.load(f)
-        f.close()
 
-        # Get items & map identifier : sid
         sids = {} # init
-        items = obj.get("item") # list
 
-        # Old SID models have "items" instead of "item" as key
-        if not items:
-            items = obj["items"]
+        for sid_filename in self.sid_files:
 
-        for item in items:
-            sids[item["identifier"]] = item["sid"]
+            # Read the contents of the sid files
+            module_name, items = self._load_sid_data(sid_filename)
+
+            for item in items:
+
+                if item["namespace"] == "identity": # save as module-name:identity
+                    sids[module_name +":"+ item["identifier"]] = item["sid"]
+
+                else:
+                    sids[item["identifier"]] = item["sid"]
 
         return sids
 
-    def _set_key_mapping(self, sid_filename: str) -> Union[Dict, NoneType]:
-        with open(file=sid_filename, mode='r') as file:
-            obj: Dict = json.load(file)
+    def _set_key_mapping(self, sid_files: tuple):
 
-        key_mapping: Union[Dict, NoneType] = None
-        
-        try:
-            key_mapping = obj['key-mapping']
-        except:
-            print(f"{sid_filename} sid files has not been generated with the --sid-extention options.\n" \
-                  + "Some conversion capabilities may not works. see http://github.com/ltn22/pyang")
-        finally:
-            return key_mapping
+        key_mapping = {}
+
+        for sid_filename in sid_files:
+            with open(sid_filename, mode='r') as f:
+                obj = json.load(f)
+
+            # Update for new SID format (XXX: refactor).
+            if len(obj) == 1 and list(obj.keys())[0].endswith("sid-file"):
+                sid_data = list(obj.values())[0]  # RFC‑9595 standard container
+            else:
+                sid_data = obj  # legacy/non-standard format
+
+            try:
+                km = sid_data['key-mapping']
+                key_mapping.update(km)
+            except KeyError:
+                print(f"{sid_filename} has not been generated with the --sid-extension option.\n" \
+                    + "Some conversion capabilities may not work. See http://github.com/ltn22/pyang")
+
+        return key_mapping

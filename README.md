@@ -36,14 +36,14 @@ pip uninstall pycoreconf
 - SID file generated as follows (see `tools/gen_sid.sh`):
 
 ```
-pyang --sid-generate-file $ENTRY:$SIZE --sid-list --sid-extention $YANG -p $MODULES
+pyang --sid-generate-file $ENTRY:$SIZE --sid-list --sid-extension $YANG [-p $MODULES]
 ```
 
 Where:
 - `$ENTRY`: Entry point of allocated YANG SID Range.
 - `$SIZE`: Size of allocated YANG SID Range.
-- `$YANG`: .yang data model file.
-- `$MODULES`: path to yang modules (pyang/modules/)
+- `$YANG`: Path to the .yang data model file.
+- `$MODULES`: (Optional) Path to directories containing dependent YANG modules. Include with -p if your model requires additional modules.
 
 > *Note*: The range of 60,000 to 99,999 (size 40,000) is reserved for experimental YANG modules. The size of the SID range allocated for a YANG module is recommended to be a multiple of 50 and to be at least 33% above the current number of YANG items.
 
@@ -59,11 +59,11 @@ Import the module with:
 import pycoreconf
 ```
 
-### `ccm = pycoreconf.CORECONFModel(sid_file, model_description_file=None)`
+### `ccm = pycoreconf.CORECONFModel(*sid_files, model_description_file=None)`
 
 Create a CORECONF Model object with an associated YANG SID file.
 
-- `sid_file`: Path to model's .sid file. Generated using [ltn22/pyang](https://github.com/ltn22/pyang/) module.
+- `sid_files`: One or more paths to .sid files. Generate using [ltn22/pyang](https://github.com/ltn22/pyang/) module.
 - `model_description_file`: Optional model description file. Used for config validation.
 
 ### `ccm.add_modules_path(ietf_modules_loc)`

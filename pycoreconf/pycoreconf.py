@@ -40,11 +40,12 @@ class CORECONFModel(ModelSID):
     to convert to and from CORECONF/CBOR representation."""
 
     def __init__(self, 
-                 sid_file, 
-                 model_description_file=None):
+                 sid_files: list[str], 
+                 model_description_file: str = None):
+        
         self.model_description_file = model_description_file
         self.yang_ietf_modules_paths = ["."]
-        ModelSID.__init__(self, sid_file)
+        super().__init__(sid_files)
 
     def add_modules_path(self, path):
         """
@@ -86,14 +87,8 @@ class CORECONFModel(ModelSID):
                 return bool(obj) 
             elif dtype == "inet:uri":
                 return str(obj)
-            elif dtype == "identityref": # look 'module:identity' in sids 
-                if encoding:
-                    idref_val = obj.split(":")
-                    ref_mod, ref_id = idref_val[0], idref_val[1] # only supports 1 module for now
-                    return self.sids[ref_id]
-                else: # sid -> "module:identityref"
-                    idref_val = self.name +":"+ self.ids[obj] 
-                    return idref_val
+            elif dtype == "identityref": # sid <-> 'module:identity'
+                return self.sids[obj] if encoding else self.ids[obj]
             elif dtype in ["empty", "leafref", "instance-identifier", "bits"]: # just return obj
                 # print("[-]", dtype, ": Returning as is." )
                 return obj
@@ -104,7 +99,7 @@ class CORECONFModel(ModelSID):
                 dtype = {v: int(k) for k, v in dtype.items()}
             return dtype[str(obj)]
         elif type(dtype) is list: # union 
-            print("[-] Union: Returning as is.")
+            # print("[-] Union: Returning as is.")
             return obj
         return obj
 
@@ -190,7 +185,7 @@ class CORECONFModel(ModelSID):
 
         # Transform to CORECONF/CBOR
         # valid = validateConfig(py_dict) #  ?
-        cc = self.lookupSIDWithoutRecursion(py_dict, path=self.moduleName)
+        cc = self.lookupSIDWithoutRecursion(py_dict)
         return cbor.dumps(cc)
 
     def lookupIdentifier(self, obj, delta=0, path="/"):
@@ -207,7 +202,8 @@ class CORECONFModel(ModelSID):
 
                 value = self.lookupIdentifier(v, sid, identifier)    # dive in
 
-                json_dict[identifier.split("/")[-1]] = value
+                json_key = identifier[len(path):].lstrip("/")
+                json_dict[json_key] = value
             return json_dict
 
         elif type(obj) is list:
@@ -243,7 +239,7 @@ class CORECONFModel(ModelSID):
                     sid = key + currentDelta
                     # look for the original identifiers
                     identifier = self.ids[sid]
-                    nodeIdentifier = identifier.split("/")[-1]
+                    nodeIdentifier = identifier[len(currentPath):].lstrip("/")
                     currentValue[nodeIdentifier] = ValueClass(currentValue.pop(key))
                     stack.append((currentValue[nodeIdentifier], sid, identifier))
         

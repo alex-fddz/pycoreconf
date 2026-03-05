@@ -15,7 +15,7 @@ def toLibconf(cfg_dict):
     return libconf.dumps(cfg_lc)
 
 # Create the model object
-ccm = pycoreconf.CORECONFModel("example-2@unknown.sid")
+ccm = pycoreconf.CORECONFModel(["example-2@unknown.sid"])
 
 # Convert configuration to CORECONF/CBOR
 config_file = "ex2-config.json"
