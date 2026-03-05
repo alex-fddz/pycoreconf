@@ -241,11 +241,14 @@ class CORECONFModel(ModelSID):
     to convert to and from CORECONF/CBOR representation."""
 
     def __init__(self, 
-                 sid_files: list[str], 
+                 sid_files: list[str] | str, 
                  model_description_file: str = None):
         
         self.model_description_file = model_description_file
         self.yang_ietf_modules_paths = ["."]
+        # Handle both single string and list of strings
+        if isinstance(sid_files, str):
+            sid_files = [sid_files]
         super().__init__(sid_files)
 
     def add_modules_path(self, path):
