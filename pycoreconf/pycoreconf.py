@@ -201,7 +201,62 @@ class CORECONFDatabase:
         """
         Get value at XPath.
         Example: db["/measurements/measurement[type='solar-radiation'][id='0']/value"]
+        Returns values with YANG identifiers instead of SIDs.
         """
+        segments = self._parse_xpath(xpath)
+        
+        # Check if we're accessing a leaf within a list entry
+        has_leaf = len(segments) > 1 and not segments[-1][1]  # Last segment has no predicates
+        is_list_entry = len(segments) > 1 and segments[-2][1]  # Previous segment has predicates (it's a list)
+        
+        if has_leaf and is_list_entry:
+            # Extract leaf name and build path to list entry instead
+            leaf_name = segments[-1][0]
+            
+            # Build xpath without the leaf
+            list_xpath_parts = []
+            for seg_name, predicates in segments[:-1]:
+                if predicates:
+                    pred_str = ''.join([f"[{k}='{v}']" for k, v in predicates.items()])
+                    list_xpath_parts.append(f"{seg_name}{pred_str}")
+                else:
+                    list_xpath_parts.append(seg_name)
+            list_xpath = "/" + "/".join(list_xpath_parts)
+            
+            try:
+                # Resolve the list entry path
+                target_sid, keys = self._resolve_path(list_xpath)
+                result = self.model.findSIDR(self.data, sid=target_sid, keys=keys)
+                
+                if result is None:
+                    raise KeyError(f"List entry not found: {list_xpath}")
+                
+                # Get and convert the entry
+                value = result[target_sid]
+                target_path = self.model.ids.get(target_sid, '')
+                
+                if '/' in target_path:
+                    parent_path = '/'.join(target_path.split('/')[:-1]) + '/'
+                else:
+                    parent_path = '/'
+                
+                wrapped = {target_sid: value}
+                self.model.lookupIdentifierWithoutRecursion(wrapped, delta=0, path=parent_path)
+                
+                node_identifier = target_path.split('/')[-1]
+                entry = wrapped.get(node_identifier, value)
+                
+                # Extract the leaf from the entry
+                leaf_key = leaf_name.split(':')[-1]  # Remove module prefix
+                if isinstance(entry, dict) and leaf_key in entry:
+                    return entry[leaf_key]
+                else:
+                    raise KeyError(f"Leaf '{leaf_key}' not found in entry")
+            except Exception as e:
+                print(f"[DEBUG] Error accessing leaf {leaf_name}: {e}")
+                raise
+        
+        # Original path resolution for container queries
         target_sid, keys = self._resolve_path(xpath)
         result = self.model.findSIDR(self.data, sid=target_sid, keys=keys)
         
@@ -209,7 +264,23 @@ class CORECONFDatabase:
             raise KeyError(f"Path not found or keys don't match: {xpath}")
         
         # Unwrap the {sid: value} dict
-        return result[target_sid]
+        value = result[target_sid]
+        
+        # Get the target path and its parent path
+        target_path = self.model.ids.get(target_sid, '')
+        
+        if '/' in target_path:
+            parent_path = '/'.join(target_path.split('/')[:-1]) + '/'
+        else:
+            parent_path = '/'
+        
+        # Create wrapped structure and convert
+        wrapped = {target_sid: value}
+        self.model.lookupIdentifierWithoutRecursion(wrapped, delta=0, path=parent_path)
+        
+        # Extract converted value
+        node_identifier = target_path.split('/')[-1]
+        return wrapped.get(node_identifier, wrapped.get(target_sid, value))
     
     def __setitem__(self, xpath, value):
         """
