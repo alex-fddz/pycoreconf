@@ -274,11 +274,135 @@ class CORECONFDatabase:
         """
         Set value at XPath.
         Example: db["/measurements/measurement[type='solar-radiation'][id='0']/value"] = 42
+                 db["/measurements/measurement[type='solar-radiation'][id='0']"] = {...YANG dict...}
+        
+        Can also create new list entries automatically:
+        Ex: db["/measurements/measurement[type='solar-radiation'][id='1']/precision"] = 3
+            - Creates the list entry if needed
         """
-        target_sid, keys = self._resolve_path(xpath)
-        result = self.model.findSIDR(self.data, sid=target_sid, keys=keys, value=value)
+        import copy
+        import json
+        
+        segments = self._parse_xpath(xpath)
+        
+        try:
+            target_sid, keys = self._resolve_path(xpath)
+        except KeyError:
+            # Path resolution failed - will be handled below if creation is needed
+            target_sid = None
+            keys = None
+        
+        target_path = self.model.ids.get(target_sid, '')
+        
+        # If value is a dict/list, convert from YANG to CBOR format first
+        if isinstance(value, (dict, list)):
+            value_copy = copy.deepcopy(value)
+            
+            wrapper = {}
+            current = wrapper
+            path_parts = [p for p in target_path.strip('/').split('/') if p]
+            
+            for part in path_parts[:-1]:
+                current[part] = {}
+                current = current[part]
+            current[path_parts[-1]] = value_copy
+            
+            cbor_data = self.model.toCORECONF(json.dumps(wrapper))
+            cbor_dict = cbor.loads(cbor_data)
+            
+            current = cbor_dict
+            for part in path_parts[:-1]:
+                part_path = '/' + '/'.join(path_parts[:path_parts.index(part)+1])
+                if part_path in self.model.sids:
+                    part_sid = self.model.sids[part_path]
+                    parent_sid = self.model.sids.get('/' + '/'.join(path_parts[:path_parts.index(part)]))
+                    if parent_sid:
+                        delta_key = part_sid - parent_sid
+                        current = current[delta_key]
+                    else:
+                        current = current[part_sid]
+            
+            final_path = '/' + '/'.join(path_parts)
+            final_sid = self.model.sids[final_path]
+            parent_sid = self.model.sids.get('/' + '/'.join(path_parts[:-1]))
+            if parent_sid:
+                delta_key = final_sid - parent_sid
+                cbor_value = current[delta_key]
+            else:
+                cbor_value = current[final_sid]
+        else:
+            cbor_value = value
+        
+        result = self.model.findSIDR(self.data, sid=target_sid, keys=keys, value=cbor_value)
         
         if result is None:
+            # Keys don't match existing list entries - need to create the entry
+            # Find which segment of the path is a list with predicates
+            for i in range(len(segments) - 1, -1, -1):
+                seg_name, seg_preds = segments[i]
+                if seg_preds:
+                    # Found a list item
+                    list_container_parts = [s[0] for s in segments[:i]]
+                    list_container_xpath = "/" + list_container_parts[0]
+                    for part in list_container_parts[1:]:
+                        list_container_xpath += "/" + part
+                    
+                    try:
+                        # Get current JSON data
+                        current_json = json.loads(self.to_json())
+                        
+                        # Navigate to the list container like before
+                        nav = current_json
+                        for part in list_container_parts:
+                            if part in nav:
+                                nav = nav[part]
+                            else:
+                                found = False
+                                for key in nav.keys():
+                                    if key.endswith(":" + part):
+                                        nav = nav[key]
+                                        found = True
+                                        break
+                                if not found:
+                                    raise KeyError(f"Container {part} not found")
+                        
+                        # Get the list
+                        if seg_name in nav:
+                            measurement_list = nav[seg_name]
+                        else:
+                            found = False
+                            for key in nav.keys():
+                                if key.endswith(":" + seg_name):
+                                    measurement_list = nav[key]
+                                    found = True
+                                    break
+                            if not found:
+                                raise KeyError(f"List {seg_name} not found")
+                        
+                        # Create entry with keys
+                        new_entry = {}
+                        for key_name, key_value in seg_preds.items():
+                            try:
+                                new_entry[key_name] = int(key_value)
+                            except ValueError:
+                                new_entry[key_name] = key_value
+                        
+                        # Add leaf value if there's one after the list item
+                        if i < len(segments) - 1:
+                            leaf_parts = [s[0] for s in segments[i+1:]]
+                            leaf_name = leaf_parts[-1]
+                            new_entry[leaf_name] = value if not isinstance(value, (dict, list)) else value
+                        
+                        # Append and reload
+                        measurement_list.append(new_entry)
+                        json_str = json.dumps(current_json)
+                        cbor_data = self.model.toCORECONF(json_str)
+                        self.data = cbor.loads(cbor_data)
+                        return
+                    
+                    except Exception:
+                        break
+            
             raise KeyError(f"Path not found or keys don't match: {xpath}")
     
     def to_cbor(self):
@@ -288,6 +412,94 @@ class CORECONFDatabase:
     def to_json(self):
         """Export data as JSON string."""
         return self.model.toJSON(self.to_cbor())
+    
+    def __delitem__(self, xpath):
+        """
+        Delete value at XPath.
+        Example: del db["/measurements/measurement[type='solar-radiation'][id='1']"]
+                 del db["/measurements/measurement[type='solar-radiation'][id='1']/precision"]
+        """
+        import json
+        
+        segments = self._parse_xpath(xpath)
+        
+        # Check if this is a list item deletion (has predicates)
+        list_seg_idx = None
+        for i in range(len(segments) - 1, -1, -1):
+            if segments[i][1]:  # Has predicates - is a list item
+                list_seg_idx = i
+                break
+        
+        if list_seg_idx is None:
+            raise KeyError(f"Can only delete list items or their leaves: {xpath}")
+        
+        # Get the list item segment
+        list_item_name, list_item_preds = segments[list_seg_idx]
+        list_container_parts = [s[0] for s in segments[:list_seg_idx]]
+        
+        # Export current JSON
+        current_json = json.loads(self.to_json())
+        
+        # Navigate to the list container
+        nav = current_json
+        for part in list_container_parts:
+            if part in nav:
+                nav = nav[part]
+            else:
+                found = False
+                for key in nav.keys():
+                    if key.endswith(":" + part):
+                        nav = nav[key]
+                        found = True
+                        break
+                if not found:
+                    raise KeyError(f"Container {part} not found: {xpath}")
+        
+        # Get the list itself
+        if list_item_name in nav:
+            measurement_list = nav[list_item_name]
+        else:
+            found = False
+            for key in nav.keys():
+                if key.endswith(":" + list_item_name):
+                    measurement_list = nav[key]
+                    found = True
+                    break
+            if not found:
+                raise KeyError(f"List {list_item_name} not found: {xpath}")
+        
+        if not isinstance(measurement_list, list):
+            raise ValueError(f"Expected list at {list_item_name}")
+        
+        # If deleting a leaf within an entry, just remove that field
+        if list_seg_idx < len(segments) - 1:
+            # Find the entry matching the predicates and remove the leaf
+            leaf_parts = [s[0] for s in segments[list_seg_idx+1:]]
+            leaf_name = leaf_parts[-1]
+            
+            for entry in measurement_list:
+                if isinstance(entry, dict) and all(
+                    entry.get(k) == (int(v) if v.isdigit() else v)
+                    for k, v in list_item_preds.items()
+                ):
+                    if leaf_name in entry:
+                        del entry[leaf_name]
+                    break
+        else:
+            # Delete the entire list entry
+            # Find and remove the entry matching all predicates
+            for i, entry in enumerate(measurement_list):
+                if isinstance(entry, dict) and all(
+                    entry.get(k) == (int(v) if v.isdigit() else v)
+                    for k, v in list_item_preds.items()
+                ):
+                    del measurement_list[i]
+                    break
+        
+        # Re-export and reload
+        json_str = json.dumps(current_json)
+        cbor_data = self.model.toCORECONF(json_str)
+        self.data = cbor.loads(cbor_data)
 
 
 class CORECONFModel(ModelSID):

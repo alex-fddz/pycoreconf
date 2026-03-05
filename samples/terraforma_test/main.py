@@ -271,23 +271,67 @@ def main():
     except Exception as e:
         print(f"[-] Error reading: {e}")
     
-    # Test writing a value
-    print("\n[*] Writing new sample-count value...")
+    # Test in-place increment operator (+=)
+    print("\n[*] Testing in-place increment operator (+=)...")
     try:
-        new_count = sample_count + 1
-        db[xpath] = new_count
-        print(f"[+] Set sample-count to {new_count}")
+        initial_count = db[xpath]
+        print(f"[+] Initial sample-count = {initial_count}")
         
-        # Verify the write
+        # Test += operator
+        db[xpath] += 1
+        print(f"[+] Incremented with +=")
+        
         verify_count = db[xpath]
-        print(f"[+] Verified sample-count = {verify_count}")
+        print(f"[+] New sample-count = {verify_count}")
         
-        if verify_count == new_count:
-            print("[+] SUCCESS: Write operation confirmed!")
+        if verify_count == initial_count + 1:
+            print("[+] SUCCESS: += operator works!")
         else:
-            print("[!] WARNING: Read value doesn't match written value")
+            print("[!] WARNING: += operator didn't work as expected")
     except Exception as e:
-        print(f"[-] Error writing: {e}")
+        print(f"[-] Error with += operator: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    # Test that += fails on containers (non-leaf nodes)
+    print("\n[*] Testing += on container (should fail)...")
+    try:
+        db[xpath_entry] += 1  # Should fail: can't add int to dict
+        print("[!] ERROR: += on container should have failed!")
+    except TypeError as e:
+        print(f"[+] Expected error caught: {type(e).__name__}")
+        print(f"[+] Message: {e}")
+    except Exception as e:
+        print(f"[-] Unexpected error: {e}")
+    
+    # Test writing entire list entry with YANG representation
+    print("\n[*] Writing complete list entry with YANG representation...")
+    try:
+        xpath_entry = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']"
+        entry = db[xpath_entry]
+        original_entry = entry.copy()
+        
+        # Modify the entry - change unit and double precision
+        entry['unit'] = 'kW/m²'  # Change unit
+        entry['precision'] = entry['precision'] * 2  # Double precision
+        
+        print(f"[*] Original: unit='{original_entry['unit']}', precision={original_entry['precision']}")
+        print(f"[*] Modified: unit='{entry['unit']}', precision={entry['precision']}")
+        
+        # Write the modified entry (YANG dict → CBOR)
+        db[xpath_entry] = entry
+        print(f"[+] Entry written successfully")
+        
+        # Verify the write by reading back
+        verified = db[xpath_entry]
+        print(f"[+] Verified: unit='{verified['unit']}', precision={verified['precision']}")
+        
+        if verified['unit'] == entry['unit'] and verified['precision'] == entry['precision']:
+            print("[+] SUCCESS: Complete entry write confirmed!")
+        else:
+            print("[!] WARNING: Verified values differ from modified values")
+    except Exception as e:
+        print(f"[-] Error writing entry: {e}")
         import traceback
         traceback.print_exc()
     
@@ -304,6 +348,90 @@ def main():
         print("-" * 70)
     except Exception as e:
         print(f"[-] Error exporting: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    # Test creating a new list entry by setting a single leaf
+    print("\n[*] Creating new list entry with single leaf assignment...")
+    try:
+        new_xpath = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='1']/precision"
+        print(f"[*] Path to create: {new_xpath}")
+        
+        # Try to assign precision=3 to a non-existent entry
+        db[new_xpath] = 3
+        print(f"[+] Assigned precision=3 to new entry")
+        
+        # Verify the assignment
+        verify_precision = db[new_xpath]
+        print(f"[+] Verified precision = {verify_precision}")
+        
+        if verify_precision == 3:
+            print("[+] SUCCESS: New entry created with single leaf!")
+            
+            # Show the CBOR structure
+            print("\n[*] CBOR structure after new entry creation:")
+            print("-" * 70)
+            cbor_bytes = db.to_cbor()
+            print(f"CBOR hex: {cbor_bytes.hex()}")
+            print(f"CBOR size: {len(cbor_bytes)} bytes")
+            print("-" * 70)
+            
+            # Convert to JSON
+            print("\n[*] JSON representation after new entry creation:")
+            print("-" * 70)
+            json_output = db.to_json()
+            print(json.dumps(json.loads(json_output), indent=2))
+            print("-" * 70)
+        else:
+            print("[!] WARNING: Precision value doesn't match")
+    except Exception as e:
+        print(f"[-] Error creating new entry: {e}")
+        print(f"[-] Type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
+    
+    # Test deleting the precision field progressively
+    print("\n[*] Step 1: Deleting precision field only...")
+    try:
+        precision_xpath = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='1']/precision"
+        del db[precision_xpath]
+        print(f"[+] Deleted precision field at {precision_xpath}")
+        
+        # Show JSON after deleting precision
+        print("\n[*] JSON representation after deleting precision:")
+        print("-" * 70)
+        json_after_precision = db.to_json()
+        print(json.dumps(json.loads(json_after_precision), indent=2))
+        print("-" * 70)
+    except Exception as e:
+        print(f"[-] Error deleting precision: {e}")
+        print(f"[-] Type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
+    
+    # Test deleting the entire list entry
+    print("\n[*] Step 2: Deleting the entire measurement node...")
+    try:
+        delete_xpath = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='1']"
+        del db[delete_xpath]
+        print(f"[+] Deleted entry at {delete_xpath}")
+        
+        # Verify deletion by trying to read it (should fail)
+        try:
+            verify_deleted = db[delete_xpath]
+            print(f"[!] WARNING: Entry still exists!")
+        except KeyError:
+            print(f"[+] Verified: Entry successfully deleted")
+        
+        # Show JSON after deletion
+        print("\n[*] JSON representation after deleting the measurement node:")
+        print("-" * 70)
+        final_json = db.to_json()
+        print(json.dumps(json.loads(final_json), indent=2))
+        print("-" * 70)
+    except Exception as e:
+        print(f"[-] Error deleting entry: {e}")
+        print(f"[-] Type: {type(e).__name__}")
         import traceback
         traceback.print_exc()
     
