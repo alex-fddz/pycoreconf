@@ -217,9 +217,9 @@ def main():
     print("[+] Database loaded")
     
     # Test reading a value with list keys
-    print("\n[*] Reading value with path: ['measurement', (100025, 0), 'sample-count']")
+    print("\n[*] Reading value with path: ['measurements', 'measurement', (100025, 0), 'sample-count']")
     try:
-        sample_count = db["measurement", (100025, 0), "sample-count"]
+        sample_count = db["measurements", "measurement", (100025, 0), "sample-count"]
         print(f"[+] sample-count = {sample_count}")
     except Exception as e:
         print(f"[-] Error reading: {e}")
@@ -227,9 +227,9 @@ def main():
         traceback.print_exc()
     
     # Test reading another value
-    print("\n[*] Reading value with path: ['measurement', (100025, 0), 'value']")
+    print("\n[*] Reading value with path: ['measurements', 'measurement', (100025, 0), 'value']")
     try:
-        value = db["measurement", (100025, 0), "value"]
+        value = db["measurements", "measurement", (100025, 0), "value"]
         print(f"[+] value = {value}")
     except Exception as e:
         print(f"[-] Error reading: {e}")
@@ -237,9 +237,9 @@ def main():
         traceback.print_exc()
     
     # Test reading precision
-    print("\n[*] Reading value with path: ['measurement', (100025, 0), 'precision']")
+    print("\n[*] Reading value with path: ['measurements', 'measurement', (100025, 0), 'precision']")
     try:
-        precision = db["measurement", (100025, 0), "precision"]
+        precision = db["measurements", "measurement", (100025, 0), "precision"]
         print(f"[+] precision = {precision}")
         
         # Calculate actual value
@@ -253,11 +253,11 @@ def main():
     print("\n[*] Writing new sample-count value...")
     try:
         new_count = sample_count + 1
-        db["measurement", (100025, 0), "sample-count"] = new_count
+        db["measurements", "measurement", (100025, 0), "sample-count"] = new_count
         print(f"[+] Set sample-count to {new_count}")
         
         # Verify the write
-        verify_count = db["measurement", (100025, 0), "sample-count"]
+        verify_count = db["measurements", "measurement", (100025, 0), "sample-count"]
         print(f"[+] Verified sample-count = {verify_count}")
         
         if verify_count == new_count:
