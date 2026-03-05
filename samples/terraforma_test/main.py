@@ -216,6 +216,18 @@ def main():
     db = ccm.loadDB(cbor_data)
     print("[+] Database loaded")
     
+    # Test accessing the list entry (without leaf)
+    xpath_entry = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']"
+    print(f"\n[*] Reading entire list entry with XPath: {xpath_entry}")
+    try:
+        entry = db[xpath_entry]
+        print(f"[+] Complete entry retrieved:")
+        pprint.pprint(entry, width=200)
+    except Exception as e:
+        print(f"[-] Error reading: {e}")
+        import traceback
+        traceback.print_exc()
+    
     # Test reading a value with list keys
     # Note: 'type' is an identityref, so we use the identity name
     # 'id' is an integer
