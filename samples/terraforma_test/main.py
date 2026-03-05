@@ -123,6 +123,11 @@ def main():
     # Path to the SID file in terraforma
     sid_path = "/Users/laurent/work/terraforma/atmos-41-weather-station@2026-03-02.sid"
     
+    print(f"[DEBUG] SID path: {repr(sid_path)}")
+    print(f"[DEBUG] Path exists: {os.path.exists(sid_path)}")
+    print(f"[DEBUG] Is file: {os.path.isfile(sid_path)}")
+    print(f"[DEBUG] Absolute path: {os.path.abspath(sid_path)}")
+    
     if not os.path.exists(sid_path):
         print(f"ERROR: SID file not found at {sid_path}")
         sys.exit(1)
