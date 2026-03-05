@@ -77,28 +77,54 @@ class CORECONFDatabase:
         if not isinstance(path, tuple):
             path = (path,)
         
-        yang_path = "/"
+        yang_elements = []
         keys = []
         
         for element in path:
             if isinstance(element, str):
                 # YANG name to add to path
-                yang_path += element + "/"
+                yang_elements.append(element)
             elif isinstance(element, tuple):
                 # List keys to filter
                 keys.extend(element)
         
-        # Remove trailing slash and lookup SID
-        yang_path = yang_path.rstrip('/')
+        # Build path incrementally, trying to match against model
+        yang_path = ""
+        for i, elem in enumerate(yang_elements):
+            if i == 0:
+                # Root element - try with and without module prefix
+                test_path = "/" + elem
+                if test_path in self.model.sids:
+                    yang_path = test_path
+                else:
+                    # Try to find with module prefix
+                    for sid_path in self.model.sids.keys():
+                        if sid_path.endswith(":" + elem) or sid_path == "/" + elem:
+                            yang_path = sid_path
+                            break
+                    if not yang_path:
+                        raise KeyError(f"Root element not found in model: {elem}")
+            else:
+                # Child elements
+                test_path = yang_path + "/" + elem
+                if test_path in self.model.sids:
+                    yang_path = test_path
+                else:
+                    # Try with module prefix
+                    found = False
+                    for sid_path in self.model.sids.keys():
+                        if sid_path.startswith(yang_path + "/") and sid_path.endswith(":" + elem):
+                            yang_path = sid_path
+                            found = True
+                            break
+                        elif sid_path == yang_path + "/" + elem:
+                            yang_path = sid_path
+                            found = True
+                            break
+                    if not found:
+                        raise KeyError(f"Path element not found in model: {elem} (partial path: {yang_path})")
         
-        # Try exact path first
-        if yang_path in self.model.sids:
-            target_sid = self.model.sids[yang_path]
-        else:
-            # Try with module prefix from the data
-            # For now, raise error if not found
-            raise KeyError(f"Path not found in model: {yang_path}")
-        
+        target_sid = self.model.sids[yang_path]
         return target_sid, keys
     
     def __getitem__(self, path):
