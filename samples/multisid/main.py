@@ -6,8 +6,8 @@ import pycoreconf
 import json
 
 # Create the model object (specify .sid and model description json file)
-ccm = pycoreconf.CORECONFModel("ietf-schc@2023-01-28.sid", 
-                               "ietf-schc-oam@2021-11-10.sid",
+ccm = pycoreconf.CORECONFModel(["ietf-schc@2023-01-28.sid",
+                                "ietf-schc-oam@2021-11-10.sid"],
                                model_description_file="description.json")
 # Specify modules location for validation (or a list of paths):
 ccm.add_modules_path("/home/alex/Projects/pyang/modules/ietf/")
@@ -22,7 +22,7 @@ print("Encoded CBOR data (CORECONF payload) =", cbor_data.hex())
 
 # Decode CBOR data back to JSON configuration data
 decoded_json = ccm.toJSON(cbor_data)  # will validate the decoded config
-print("Decoded config data =", decoded_json)
+print("\nDecoded config data =", decoded_json, "\n")
 
 # Test
 with open(config_file, "r") as f:

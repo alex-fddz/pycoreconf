@@ -5,7 +5,7 @@
 import pycoreconf
 
 # Create the model object (specify .sid and model description json file)
-ccm = pycoreconf.CORECONFModel("example-4-a@unknown.sid", model_description_file="description.json")
+ccm = pycoreconf.CORECONFModel(["example-4-a@unknown.sid"], model_description_file="description.json")
 # Specify modules location for validation (or a list of paths):
 ccm.add_modules_path("/home/alex/Projects/pyang/modules/ietf/")
 ccm.add_modules_path(["/path/to/modules/", "another/path/"])

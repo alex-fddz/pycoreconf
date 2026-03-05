@@ -5,7 +5,7 @@
 import pycoreconf
 
 # Create the model object
-ccm = pycoreconf.CORECONFModel("example-1@unknown.sid")
+ccm = pycoreconf.CORECONFModel(["example-1@unknown.sid"])
 
 # Read JSON configuration file
 config_file = "ex1-config.json"
