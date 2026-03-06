@@ -34,9 +34,11 @@ def main():
     print(db)
     print(db.to_cbor().hex())
 
-    db["/schc/rule[rule-id-value='11'][rule-id-length='3']/entry[entry-index='0']/field-id"] = "fid-ipv6-version"
+    db["/schc/rule[rule-id-value='11'][rule-id-length='3']/entry[entry-index='1']/field-id"] = "ietf-schc:fid-ipv6-version"
 
     print(db)
+    print(db.to_cbor().hex())
+    print(cbor.loads(db.to_cbor()))
 
 
 
