@@ -54,7 +54,7 @@ class ModelSID:
             for item in items:
 
                 if item["namespace"] == "identity": # save as module-name:identity
-                    sids[module_name +":"+ item["identifier"]] = int(item["sid"]) # XXX: use formatted string for better readability.
+                    sids[f'{module_name}:{item["identifier"]}'] = int(item["sid"])
 
                 else:
                     sids[item["identifier"]] = int(item["sid"])
