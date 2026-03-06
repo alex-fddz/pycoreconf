@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: schc_test.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/samples/terraforma_test/schc_test.py",
+            "cwd": "${workspaceFolder}/samples/terraforma_test",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: terraforma",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "/Volumes/My Passport/work/pycoreconf/samples/terraforma_test/main.py",
+            "cwd": "/Volumes/My Passport/work/pycoreconf",
+            "python": "/Users/laurent/work/pycoreconf/samples/terraforma_test/.venv/bin/python",
+            "env": {
+                "PYTHONPATH": "/Volumes/My Passport/work/pycoreconf"
+            }
+        }
+    ]
+}

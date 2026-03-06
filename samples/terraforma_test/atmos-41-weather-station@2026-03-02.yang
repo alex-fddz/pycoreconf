@@ -1,0 +1,389 @@
+module atmos-41-weather-station {
+  yang-version 1.1;
+  namespace "urn:meter:params:xml:ns:yang:atmos-41";
+  prefix atmos41;
+
+  organization "METER Group, Inc.";
+  contact
+    "Technical Support
+     https://www.metergroup.com/";
+
+  description
+    "YANG data model for the ATMOS 41 All-in-One Weather Station.
+     This model defines the operational state data for sensor readings.
+     
+     Copyright (c) 2026 METER Group, Inc. All rights reserved.";
+
+  revision 2026-03-02 {
+    description
+      "Major update for CoMI compliance:
+       - Added multi-sensor support (id key).
+       - Measurements are now configurable (writable).
+       - Added standard deviation (stdev).
+       - Added uptime to state.
+       - Removed tilt from fixed state (now a measurement type).
+       - Removed legacy RPCs (subscribe, get-stats) in favor of CoMI/Observe.
+       - Cleaned up measurement lists and notifications.";
+  }
+
+  revision 2026-02-27 {
+    description
+      "Initial revision for testing.";
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Measurement-type identity hierarchy                                  */
+  /* ------------------------------------------------------------------ */
+
+  identity measurement-type {
+    description
+      "Base identity for all measurement types supported by ATMOS 41.";
+  }
+
+  /* --- Environmental --- */
+
+  identity solar-radiation {
+    base measurement-type;
+    description "Solar radiation measurement (W/m2).";
+  }
+
+  identity precipitation {
+    base measurement-type;
+    description "Precipitation measurement (mm).";
+  }
+
+  identity air-temperature {
+    base measurement-type;
+    description "Air temperature measurement (Â°C).";
+  }
+
+  identity relative-humidity {
+    base measurement-type;
+    description "Relative humidity measurement (%).";
+  }
+
+  identity barometric-pressure {
+    base measurement-type;
+    description "Barometric pressure measurement (kPa).";
+  }
+
+  identity vapor-pressure {
+    base measurement-type;
+    description "Vapor pressure measurement (kPa).";
+  }
+
+  /* --- Wind --- */
+
+  identity wind-speed {
+    base measurement-type;
+    description "Horizontal wind speed measurement (m/s).";
+  }
+
+  identity wind-direction {
+    base measurement-type;
+    description "Wind direction measurement (degrees).";
+  }
+
+  identity wind-gust {
+    base measurement-type;
+    description "Wind gust measurement (m/s).";
+  }
+
+  /* --- Lightning --- */
+
+  identity strike-count {
+    base measurement-type;
+    description "Lightning strike count.";
+  }
+
+  identity average-distance {
+    base measurement-type;
+    description "Average lightning distance (km).";
+  }
+
+  /* --- Orientation --- */
+
+  identity tilt {
+    base measurement-type;
+    description "Sensor tilt measurement (degrees).";
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Typedefs                                                             */
+  /* ------------------------------------------------------------------ */
+
+  typedef encoding-type {
+    type enumeration {
+      enum direct {
+        value 0;
+        description "Value is encoded directly as an integer.";
+      }
+      enum delta {
+        value 1;
+        description "Value is encoded as a delta from the previous value.";
+      }
+    }
+    description "Encoding used for the measurement values.";
+  }
+  
+  /* ------------------------------------------------------------------ */
+  /* Shared grouping used by notifications                                */
+  /* ------------------------------------------------------------------ */
+
+  grouping atmos41-measurements-list {
+    list measurement {
+      key "type id";
+      description
+        "List of measurements included in this notification.";
+
+      leaf type {
+        type identityref {
+          base measurement-type;
+        }
+        description "The type of measurement (e.g., air-temperature).";
+      }
+
+      leaf id {
+        type uint8;
+        description 
+          "Instance identifier for this measurement type. 
+           Allows multiple sensors of the same type.
+           Default is 0.";
+      }
+
+      leaf precision {
+        type uint8;
+        description
+          "Number of decimal places for the values.
+           Real value = raw_value * 10^-precision.";
+      }
+
+      leaf encoding {
+        type encoding-type;
+        default "delta";
+        description
+          "The encoding used for the values list.";
+      }
+
+      leaf start-time {
+        type uint32;
+        units "seconds";
+        description "Timestamp of the first sample in the list.";
+      }
+
+      leaf step {
+        type uint32;
+        units "milliseconds";
+        description "Time interval between samples.";
+      }
+
+      leaf-list values {
+        type int64;
+        ordered-by user;
+        description
+          "List of encoded measurement values.";
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* State data                                                           */
+  /* ------------------------------------------------------------------ */
+
+  container state {
+    config false;
+    description
+      "Operational state data of the weather station.";
+      
+    leaf uptime {
+      type uint32;
+      units "seconds";
+      description "Time elapsed since the last boot.";
+    }
+
+    leaf x-orientation {
+       type int64;
+       description "X orientation (raw accelerometer data).";
+    }
+
+    leaf y-orientation {
+       type int64;
+       description "Y orientation (raw accelerometer data).";
+    }
+
+    leaf north-wind-speed {
+       type int64;
+       description "North wind speed component.";
+    }
+
+    leaf east-wind-speed {
+       type int64;
+       description "East wind speed component.";
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Measurements Configuration & Data                                    */
+  /* ------------------------------------------------------------------ */
+
+  container measurements {
+    // config true (default);
+    description
+      "Current measurement values accessible via polling or configuration.";
+
+    list measurement {
+      key "type id";
+      description
+        "List of available measurements.";
+
+      leaf type {
+        type identityref {
+          base measurement-type;
+        }
+        description "The type of measurement.";
+      }
+
+      leaf id {
+        type uint8;
+        description 
+          "Instance identifier to distinguish multiple sensors of the same type.";
+      }
+
+      leaf value {
+        type int64;
+        mandatory true;
+        description
+          "The current raw integer value of the measurement.";
+      }
+
+      leaf precision {
+        type uint8;
+        default 1;
+        description
+          "Number of decimal places.
+           Real value = value * 10^-precision.";
+      }
+
+      leaf unit {
+        type string;
+        description "Unit of measurement (e.g., 'C', 'm/s', '%').";
+      }
+
+      // Statistics are read-only state data
+      leaf min {
+        type int64;
+        config false;
+        description "Minimum value observed since last reset.";
+      }
+
+      leaf max {
+        type int64;
+        config false;
+        description "Maximum value observed since last reset.";
+      }
+
+      leaf mean {
+        type int64;
+        config false;
+        description "Mean value observed since last reset.";
+      }
+
+      leaf median {
+        type int64;
+        config false;
+        description
+          "Estimated median value observed since last reset.
+           This median is computed incrementally from the current stored
+           statistics and the newest sample, without keeping full history.";
+      }
+      
+      leaf stdev {
+        type uint64; 
+        config false;
+        description
+          "Standard deviation of values observed since last reset.
+           Scaled by same precision as value.";
+      }
+
+      leaf sample-count {
+        type uint64;
+        config false;
+        description "Number of samples allowed for statistics calculation.";
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* RPCs                                                                 */
+  /* ------------------------------------------------------------------ */
+
+  rpc reset-stats {
+    description
+      "Reset the accumulated statistics (min, max, mean, median, stdev) for one
+       or more measurement types. The counters restart from the next
+       sample received after the call.";
+    input {
+      list target {
+        key "type id";
+        leaf type {
+          type identityref {
+             base measurement-type;
+          }
+        }
+        leaf id {
+          type uint8;
+        }
+        description
+          "Measurement type instances to reset.
+           If empty, all statistics are reset.";
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Notifications                                                        */
+  /* ------------------------------------------------------------------ */
+
+  notification measurement-push {
+    description
+      "Measurement event sent to observers of the notification stream.
+       To receive this, a CoLA/CoMI client must Observe the stream resource.";
+    
+    leaf last {
+      type boolean;
+      default "false";
+      description "True if this is the last notification for the current series.";
+    }
+    
+    uses atmos41-measurements-list;
+  }
+
+  notification sensor-alert {
+    description
+      "Alert notification when a value exceeds a threshold.";
+    
+    leaf type {
+      type identityref {
+        base measurement-type;
+      }
+      mandatory true;
+    }
+    
+    leaf id {
+      type uint8;
+      mandatory true;
+    }
+
+    leaf message {
+      type string;
+      description "Alert description.";
+    }
+
+    leaf severity {
+      type enumeration {
+        enum warning;
+        enum critical;
+      }
+    }
+  }
+}
