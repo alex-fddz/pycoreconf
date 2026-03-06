@@ -336,74 +336,83 @@ class CORECONFDatabase:
         result = self.model.findSIDR(self.data, sid=target_sid, keys=keys, value=cbor_value)
         
         if result is None:
-            # Keys don't match existing list entries - need to create the entry
-            # Find which segment of the path is a list with predicates
-            for i in range(len(segments) - 1, -1, -1):
-                seg_name, seg_preds = segments[i]
-                if seg_preds:
-                    # Found a list item
-                    list_container_parts = [s[0] for s in segments[:i]]
-                    list_container_xpath = "/" + list_container_parts[0]
-                    for part in list_container_parts[1:]:
-                        list_container_xpath += "/" + part
-                    
+            # Materialize missing path parts in JSON (containers + list entries).
+            # This allows creation from an empty DB and nested list predicates.
+            current_json = json.loads(self.to_json())
+            qualified_parts = [p for p in target_path.strip('/').split('/') if p] if target_path else []
+
+            def _to_typed_predicates(predicates):
+                typed = {}
+                for key_name, key_value in predicates.items():
                     try:
-                        # Get current JSON data
-                        current_json = json.loads(self.to_json())
-                        
-                        # Navigate to the list container like before
-                        nav = current_json
-                        for part in list_container_parts:
-                            if part in nav:
-                                nav = nav[part]
-                            else:
-                                found = False
-                                for key in nav.keys():
-                                    if key.endswith(":" + part):
-                                        nav = nav[key]
-                                        found = True
-                                        break
-                                if not found:
-                                    raise KeyError(f"Container {part} not found")
-                        
-                        # Get the list
-                        if seg_name in nav:
-                            measurement_list = nav[seg_name]
-                        else:
-                            found = False
-                            for key in nav.keys():
-                                if key.endswith(":" + seg_name):
-                                    measurement_list = nav[key]
-                                    found = True
-                                    break
-                            if not found:
-                                raise KeyError(f"List {seg_name} not found")
-                        
-                        # Create entry with keys
-                        new_entry = {}
-                        for key_name, key_value in seg_preds.items():
-                            try:
-                                new_entry[key_name] = int(key_value)
-                            except ValueError:
-                                new_entry[key_name] = key_value
-                        
-                        # Add leaf value if there's one after the list item
-                        if i < len(segments) - 1:
-                            leaf_parts = [s[0] for s in segments[i+1:]]
-                            leaf_name = leaf_parts[-1]
-                            new_entry[leaf_name] = value if not isinstance(value, (dict, list)) else value
-                        
-                        # Append and reload
-                        measurement_list.append(new_entry)
-                        json_str = json.dumps(current_json)
-                        cbor_data = self.model.toCORECONF(json_str)
-                        self.data = cbor.loads(cbor_data)
-                        return
-                    
-                    except Exception:
-                        break
-            
-            raise KeyError(f"Path not found or keys don't match: {xpath}")
+                        typed[key_name] = int(key_value)
+                    except ValueError:
+                        typed[key_name] = key_value
+                return typed
+
+            def _match_dict_key(node, short_name, preferred_name):
+                if short_name in node:
+                    return short_name
+                if preferred_name in node:
+                    return preferred_name
+                for existing_key in node.keys():
+                    if isinstance(existing_key, str) and existing_key.endswith(":" + short_name):
+                        return existing_key
+                return None
+
+            nav = current_json
+            for idx, (seg_name, seg_preds) in enumerate(segments):
+                is_last = idx == len(segments) - 1
+                preferred_name = qualified_parts[idx] if idx < len(qualified_parts) else seg_name
+
+                if seg_preds:
+                    if not isinstance(nav, dict):
+                        raise KeyError(f"Path not found or keys don't match: {xpath}")
+
+                    list_key = _match_dict_key(nav, seg_name, preferred_name)
+                    if list_key is None:
+                        nav[preferred_name] = []
+                        list_key = preferred_name
+
+                    if not isinstance(nav[list_key], list):
+                        raise KeyError(f"Path not found or keys don't match: {xpath}")
+
+                    typed_preds = _to_typed_predicates(seg_preds)
+                    target_entry = None
+                    for entry in nav[list_key]:
+                        if isinstance(entry, dict) and all(entry.get(k) == v for k, v in typed_preds.items()):
+                            target_entry = entry
+                            break
+
+                    if target_entry is None:
+                        target_entry = dict(typed_preds)
+                        nav[list_key].append(target_entry)
+
+                    if is_last:
+                        if isinstance(value, dict):
+                            target_entry.update(value)
+                    nav = target_entry
+                    continue
+
+                if not isinstance(nav, dict):
+                    raise KeyError(f"Path not found or keys don't match: {xpath}")
+
+                child_key = _match_dict_key(nav, seg_name, preferred_name)
+                if is_last:
+                    final_key = child_key if child_key is not None else preferred_name
+                    nav[final_key] = value if not isinstance(value, (dict, list)) else copy.deepcopy(value)
+                else:
+                    if child_key is None:
+                        nav[preferred_name] = {}
+                        child_key = preferred_name
+                    elif not isinstance(nav[child_key], dict):
+                        raise KeyError(f"Path not found or keys don't match: {xpath}")
+                    nav = nav[child_key]
+
+            json_str = json.dumps(current_json)
+            cbor_data = self.model.toCORECONF(json_str)
+            self.data = cbor.loads(cbor_data)
+            return
     
     def to_cbor(self):
         """Export modified data back to CBOR."""
@@ -412,6 +421,17 @@ class CORECONFDatabase:
     def to_json(self):
         """Export data as JSON string."""
         return self.model.toJSON(self.to_cbor())
+
+    def __str__(self):
+        """Return a human-friendly JSON representation for print(db)."""
+        try:
+            return json.dumps(json.loads(self.to_json()), indent=2)
+        except Exception:
+            return self.to_json()
+
+    def __repr__(self):
+        """Keep interactive output consistent with print(db)."""
+        return self.__str__()
     
     def __delitem__(self, xpath):
         """
@@ -928,7 +948,7 @@ class CORECONFModel(ModelSID):
         # print("Config validation OK.")
         return True
 
-    def loadDB(self, cbor_data):
+    def loadDB(self, cbor_data = cbor.dumps({})):
         """
         Load CBOR data into a high-level database interface.
         

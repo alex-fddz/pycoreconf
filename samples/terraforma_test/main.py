@@ -121,7 +121,7 @@ def main():
     print("=" * 70)
     
     # Path to the SID file in terraforma
-    sid_path = "/Users/laurent/work/terraforma/atmos-41-weather-station@2026-03-02.sid"
+    sid_path = "atmos-41-weather-station@2026-03-02.sid"
     
     print(f"[DEBUG] SID path: {repr(sid_path)}")
     print(f"[DEBUG] Path exists: {os.path.exists(sid_path)}")
