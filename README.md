@@ -108,3 +108,75 @@ Returns a python dictionary with configuration keys/leaves substituted by their 
 - `config_pydict`: Python dictionary holding configuration data, with SID delta values as keys.
 
 Returns a python dictionary with SID delta keys substituted by their corresponding leaf identifiers.
+
+## Database Manipulation with XPath
+
+The `CORECONFDatabase` object provides an intuitive way to manipulate configuration data using XPath-like queries. This allows you to create, read, and modify database entries without manually managing CBOR encoding.
+
+### Creating and Loading Databases
+
+```python
+import pycoreconf
+
+# Create a model from SID file
+model = pycoreconf.CORECONFModel("ietf-schc@2026-02-24.sid")
+
+# Create an empty database
+db = model.loadDB()
+
+# Load from existing CBOR data
+cbor_data = b'...'  # CBOR encoded bytes
+db = model.loadDB(cbor_data)
+```
+
+### Accessing and Modifying Data
+
+You can use XPath-like syntax to access nested data structures:
+
+```python
+# Create a list entry with predicates (identifies specific rule)
+db["/schc/rule[rule-id-value='10'][rule-id-length='3']"] = {}
+
+# Create nested entries
+db["/schc/rule[rule-id-value='11'][rule-id-length='3']/entry[entry-index='0']"] = {}
+
+# Modify leaf values
+db["/schc/rule[rule-id-value='11'][rule-id-length='3']/entry[entry-index='1']/entry-index"] = 1
+
+# Set identity references (requires fully qualified names)
+db["/schc/rule[rule-id-value='11'][rule-id-length='3']/entry[entry-index='1']/field-id"] = "ietf-schc:fid-ipv6-version"
+```
+
+### Working with Data
+
+```python
+# View database as formatted JSON
+print(db)
+
+# Export to CBOR (binary format)
+cbor_bytes = db.to_cbor()
+
+# Export to CBOR as hexadecimal string
+hex_string = db.to_cbor().hex()
+
+# Decode CBOR for diagnostic purposes
+import cbor2
+data_dict = cbor2.loads(db.to_cbor())
+print(data_dict)
+```
+
+### Key Features
+
+- **XPath Queries**: Navigate and modify data using XPath-like paths with list item predicates
+- **Automatic Type Casting**: Values are automatically converted to appropriate types based on YANG model
+- **Identity References**: Support for YANG `identityref` types (use fully qualified names like `"module:identity"`)
+- **Path Materialization**: Automatically creates intermediate containers and list entries as needed
+- **Pretty Printing**: Use `print(db)` to display formatted JSON output
+
+### Example from SCHC Test
+
+See `samples/terraforma_test/schc_test.py` for a complete working example demonstrating:
+- Creating list entries with multiple predicates
+- Modifying nested database values
+- Exporting to CBOR and hexadecimal formats
+- Diagnostic output with CBOR decoding
