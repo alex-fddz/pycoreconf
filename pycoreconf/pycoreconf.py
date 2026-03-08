@@ -834,7 +834,7 @@ class CORECONFModel(ModelSID):
         # Unwrap the ValueClass objects before returning
         return(unwrapValues(obj))
 
-    def findSIDR(self, obj, sid=None, keys=None, value=None, delta=0, path='/', depth=None):
+    def findSIDR(self, obj, sid=None, keys=None, value=None, delta=0, path='/', depth=None, no_keys=False):
         """
         Recursive SID lookup/setter that preserves the tree structure.
         Returns {sid: value} when found, otherwise None.
@@ -843,6 +843,9 @@ class CORECONFModel(ModelSID):
             None / absent → full sub-tree (unbounded).
             0             → only direct scalar leaves, no nested containers.
             N             → N levels of nesting below the matched node.
+
+        no_keys (bool): if True, when the target SID is a list node, return
+            all entries instead of filtering by keys (CoMI keyless list lookup).
         """
 
         if keys is None:
@@ -875,6 +878,10 @@ class CORECONFModel(ModelSID):
 
                         # child_object is directly a list of dictionaries
                         if type(child_object) is list:
+                            # no_keys: return all entries (CoMI keyless list lookup)
+                            if no_keys and sid is not None and sid == p_sid:
+                                return {p_sid: [_trim(e, depth) for e in child_object]}
+
                             if len(key_sids) > len(remaining_keys):
                                 raise ValueError("Not enough keys provided for list with key: " + str(p_sid))
 
