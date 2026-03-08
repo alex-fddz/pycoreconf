@@ -852,14 +852,32 @@ class CORECONFModel(ModelSID):
         # Unwrap the ValueClass objects before returning
         return(unwrapValues(obj))
 
-    def findSIDR(self, obj, sid=None, keys=None, value=None, delta=0, path='/'):
+    def findSIDR(self, obj, sid=None, keys=None, value=None, delta=0, path='/', depth=None):
         """
         Recursive SID lookup/setter that preserves the tree structure.
         Returns {sid: value} when found, otherwise None.
+
+        depth (int or None): maximum depth of the returned sub-tree.
+            None / absent → full sub-tree (unbounded).
+            0             → only direct scalar leaves, no nested containers.
+            N             → N levels of nesting below the matched node.
         """
 
         if keys is None:
             keys = []
+
+        def _trim(node, d):
+            """Trim a CBOR sub-tree to at most d levels of nesting."""
+            if d is None:
+                return node
+            if isinstance(node, dict):
+                if d == 0:
+                    return {k: v for k, v in node.items()
+                            if not isinstance(v, (dict, list))}
+                return {k: _trim(v, d - 1) for k, v in node.items()}
+            if isinstance(node, list):
+                return [_trim(e, d) for e in node]
+            return node
 
         def _walk(node, current_delta, current_path, remaining_keys):
             if type(node) is dict:
@@ -894,9 +912,9 @@ class CORECONFModel(ModelSID):
                                     # If this is the target SID, return the matched entry
                                     if sid is not None and sid == p_sid:
                                         if value is None:
-                                            return {p_sid: entry}
+                                            return {p_sid: _trim(entry, depth)}
                                         entry.update(value) if isinstance(value, dict) else entry
-                                        return {p_sid: entry}
+                                        return {p_sid: _trim(entry, depth)}
                                     
                                     # Continue exploring within this entry
                                     result = _walk(entry, p_sid, identifier, new_keys)
@@ -909,9 +927,9 @@ class CORECONFModel(ModelSID):
                     # Check if we found the target SID
                     if sid is not None and sid == p_sid:
                         if value is None:
-                            return {p_sid: node[key]}
+                            return {p_sid: _trim(node[key], depth)}
                         node[key] = value
-                        return {p_sid: value}
+                        return {p_sid: _trim(value, depth)}
 
                     # Regular node traversal
                     child_object = node[key]
