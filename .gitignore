@@ -1,3 +1,12 @@
+# VS Code
+.vscode/
+
+# macOS system files
+.DS_Store
+
+# Python version manager
+.python-version
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
