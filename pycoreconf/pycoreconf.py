@@ -201,12 +201,15 @@ class CORECONFDatabase:
         """
         Get value at XPath.
         Example: db["/measurements/measurement[type='solar-radiation'][id='0']/value"]
-        Returns values with YANG identifiers instead of SIDs.
+        Returns values with YANG identifiers instead of SIDs, or None if not found.
         """
         import copy
-        
-        # Resolve the path
-        target_sid, keys = self._resolve_path(xpath)
+
+        # Resolve the path — return None if the path does not exist in the model
+        try:
+            target_sid, keys = self._resolve_path(xpath)
+        except (KeyError, ValueError):
+            return None
         target_path = self.model.ids.get(target_sid, '')
         
         # Check if this is a leaf (has type info in model)
@@ -222,8 +225,8 @@ class CORECONFDatabase:
             if parent_sid:
                 result = self.model.findSIDR(self.data, sid=parent_sid, keys=keys)
                 if result is None:
-                    raise KeyError(f"Path not found or keys don't match: {xpath}")
-                
+                    return None
+
                 value = result[parent_sid]
                 
                 if '/' in parent_path:
@@ -243,14 +246,14 @@ class CORECONFDatabase:
                 if isinstance(entry, dict) and leaf_key in entry:
                     return entry[leaf_key]
                 else:
-                    raise KeyError(f"Leaf '{leaf_key}' not found in entry")
+                    return None
         
         # Default path resolution for container queries
         result = self.model.findSIDR(self.data, sid=target_sid, keys=keys)
         
         if result is None:
-            raise KeyError(f"Path not found or keys don't match: {xpath}")
-        
+            return None
+
         # Unwrap the {sid: value} dict
         value = result[target_sid]
         
