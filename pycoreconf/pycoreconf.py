@@ -257,7 +257,7 @@ class CORECONFDatabase:
         result = self.model.findSIDR(self.data, sid=target_sid, keys=keys)
         
         if result is None:
-            return None
+            return None  # when used in test, this allows checking for non-existence without raising an exception
 
         # Unwrap the {sid: value} dict
         value = result[target_sid]
