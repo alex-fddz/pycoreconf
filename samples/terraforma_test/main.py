@@ -220,6 +220,17 @@ def main():
     print("\n[*] Loading CBOR data into database...")
     db = ccm.loadDB(cbor_data)
     print("[+] Database loaded")
+
+    # Test retrieving list keys for all measurement entries
+    print("\n[*] Testing get_keys() on /measurements/measurement...")
+    try:
+        measurement_keys = db.get_keys("/measurements/measurement")
+        print(f"[+] Found {len(measurement_keys)} key set(s)")
+        pprint.pprint(measurement_keys, width=200)
+    except Exception as e:
+        print(f"[-] Error reading keys: {e}")
+        import traceback
+        traceback.print_exc()
     
     # Test accessing the list entry (without leaf)
     xpath_entry = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']"

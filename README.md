@@ -164,12 +164,34 @@ data_dict = cbor2.loads(db.to_cbor())
 print(data_dict)
 ```
 
+### List Key Discovery with `get_keys`
+
+Use `get_keys` on a list XPath to retrieve key predicates for existing entries.
+
+```python
+# Return all key predicates for current list entries
+filters = db.get_keys("/measurements/measurement")
+# Example output:
+# ["[type='atmos-41-weather-station:solar-radiation'][id='0']", ...]
+
+# Rebuild full XPaths from returned predicates
+paths = [f"/measurements/measurement{f}" for f in filters]
+```
+
+You can also call it with predicates:
+
+```python
+db.get_keys("/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']")
+# -> ["[type='atmos-41-weather-station:solar-radiation'][id='0']"]
+```
+
 ### Key Features
 
 - **XPath Queries**: Navigate and modify data using XPath-like paths with list item predicates
 - **Automatic Type Casting**: Values are automatically converted to appropriate types based on YANG model
 - **Identity References**: Support for YANG `identityref` types (use fully qualified names like `"module:identity"`)
 - **Path Materialization**: Automatically creates intermediate containers and list entries as needed
+- **List Key Discovery**: Use `db.get_keys("/list/path")` to enumerate key predicates of existing list entries
 - **Pretty Printing**: Use `print(db)` to display formatted JSON output
 
 ### Example from SCHC Test
