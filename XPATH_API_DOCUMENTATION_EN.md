@@ -98,6 +98,26 @@ print(entry)
 all_measurements = db["/measurements"]
 ```
 
+### Read List Keys (`get_keys`)
+
+`get_keys` returns list-entry key predicates for a list XPath.
+
+```python
+filters = db.get_keys("/measurements/measurement")
+print(filters)
+# ["[type='atmos-41-weather-station:solar-radiation'][id='0']", ...]
+
+# Build full entry paths from returned predicates
+entry_paths = [f"/measurements/measurement{f}" for f in filters]
+```
+
+With predicates in input, the function returns a single canonical filter string:
+
+```python
+db.get_keys("/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']")
+# ["[type='atmos-41-weather-station:solar-radiation'][id='0']"]
+```
+
 ### Features
 
 - identityref values are **automatically converted** to readable identity names

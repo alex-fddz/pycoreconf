@@ -22,6 +22,18 @@
             "env": {
                 "PYTHONPATH": "/Volumes/My Passport/work/pycoreconf"
             }
+        },
+        {
+            "name": "Python: terraforma main.py (workspace)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/samples/terraforma_test/main.py",
+            "cwd": "${workspaceFolder}/samples/terraforma_test",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }

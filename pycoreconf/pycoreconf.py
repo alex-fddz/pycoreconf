@@ -421,6 +421,71 @@ class CORECONFDatabase:
             cbor_data = self.model.toCORECONF(json_str)
             self.data = cbor.loads(cbor_data)
             return
+        
+    def get_keys(self, xpath):
+        """
+        Return list-key predicates for entries under a list XPath.
+
+        Example:
+            db.get_keys("/measurements/measurement")
+            -> ["[type='module:identity'][id='0']", ...]
+
+        If XPath includes predicates, returns the corresponding predicate string
+        as a single-item list.
+        """
+        try:
+            target_sid, keys = self._resolve_path(xpath)
+        except (KeyError, ValueError):
+            return None
+
+        key_sids = self.model.key_mapping.get(str(target_sid))
+        if not key_sids:
+            return None
+
+        def _format_predicates_from_values(values):
+            parts = []
+            for key_sid, raw_value in zip(key_sids, values):
+                key_path = self.model.ids.get(key_sid, f"unknown_key_{key_sid}")
+                key_leaf_name = key_path.split("/")[-1].split(":")[-1]
+                key_dtype = self.model.types.get(key_path)
+
+                key_value = raw_value
+                if key_dtype == "identityref":
+                    key_value = self.model.ids.get(raw_value, raw_value)
+
+                parts.append(f"[{key_leaf_name}='{key_value}']")
+            return "".join(parts)
+
+        # Predicates already present in the XPath: return a single canonical filter.
+        if keys:
+            return [_format_predicates_from_values(keys)]
+
+        child = self.model.findSIDR(self.data, sid=target_sid, keys=[], no_keys=True)
+        if child is None:
+            return []
+
+        entries = child.get(target_sid, [])
+        if not isinstance(entries, list):
+            return []
+
+        answer = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+
+            values = []
+            complete = True
+            for key_sid in key_sids:
+                key_delta = key_sid - target_sid
+                if key_delta not in entry:
+                    complete = False
+                    break
+                values.append(entry[key_delta])
+
+            if complete:
+                answer.append(_format_predicates_from_values(values))
+
+        return answer
     
     def to_cbor(self):
         """Export modified data back to CBOR."""
