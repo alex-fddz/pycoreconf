@@ -105,7 +105,7 @@ all_measurements = db["/measurements"]
 ```python
 filters = db.get_keys("/measurements/measurement")
 print(filters)
-# ["[type='atmos-41-weather-station:solar-radiation'][id='0']", ...]
+# ["[type='solar-radiation'][id='0']", ...]
 
 # Build full entry paths from returned predicates
 entry_paths = [f"/measurements/measurement{f}" for f in filters]
@@ -115,8 +115,13 @@ With predicates in input, the function returns a single canonical filter string:
 
 ```python
 db.get_keys("/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']")
-# ["[type='atmos-41-weather-station:solar-radiation'][id='0']"]
+# ["[type='solar-radiation'][id='0']"]
 ```
+
+For `identityref` keys, short names are returned when unambiguous; otherwise,
+the output keeps the fully qualified `module:identity` form.
+
+For `enum` keys, symbolic names are returned when the SID model provides the mapping.
 
 ### Features
 

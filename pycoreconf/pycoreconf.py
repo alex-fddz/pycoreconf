@@ -96,6 +96,123 @@ class CORECONFDatabase:
             segments.append((segment_name, predicates))
         
         return segments
+
+    def _resolve_identity_to_sid(self, identity_value):
+        """
+        Resolve an identityref textual value to its SID.
+
+        Accepted formats:
+        - "module:identity"
+        - "/module:identity"
+        - "identity" (only when unique across loaded modules)
+        """
+        if not isinstance(identity_value, str):
+            raise ValueError(f"Identity must be a string, got: {type(identity_value).__name__}")
+
+        # Try exact key as-is.
+        if identity_value in self.model.sids:
+            return self.model.sids[identity_value]
+
+        # Try with leading slash.
+        prefixed = identity_value if identity_value.startswith("/") else "/" + identity_value
+        if prefixed in self.model.sids:
+            return self.model.sids[prefixed]
+
+        # If unqualified identity name is provided, resolve only when unambiguous.
+        normalized = identity_value.lstrip("/")
+        if ":" not in normalized:
+            matches = []
+            for candidate_path, candidate_sid in self.model.sids.items():
+                if not isinstance(candidate_path, str):
+                    continue
+                candidate = candidate_path.lstrip("/")
+
+                # Only consider top-level qualified names, e.g. module:identity.
+                if "/" in candidate or ":" not in candidate:
+                    continue
+
+                candidate_short = candidate.split(":", 1)[1]
+                if candidate_short == normalized:
+                    matches.append(candidate_sid)
+
+            if len(matches) == 1:
+                return matches[0]
+            if len(matches) > 1:
+                raise ValueError(f"Ambiguous identity name: {identity_value}")
+
+        raise ValueError(f"Identity not found in model: {identity_value}")
+
+    def _format_identity_for_xpath(self, raw_value):
+        """
+        Format identityref value for XPath predicates.
+
+        Prefer short identity names (without module prefix) when they are
+        unambiguous in the loaded model(s). Otherwise keep module-qualified form.
+        """
+        full_identity = self.model.ids.get(raw_value, raw_value)
+        if not isinstance(full_identity, str):
+            return full_identity
+
+        full_identity = full_identity.lstrip("/")
+        if ":" not in full_identity:
+            return full_identity
+
+        short_identity = full_identity.split(":", 1)[1]
+
+        try:
+            resolved_from_short = self._resolve_identity_to_sid(short_identity)
+            if resolved_from_short == raw_value:
+                return short_identity
+        except ValueError:
+            pass
+
+        return full_identity
+
+    def _resolve_enum_to_int(self, enum_type, enum_value):
+        """
+        Resolve enum predicate value to its integer representation.
+
+        Accepted formats:
+        - enum name (e.g. "delta")
+        - enum integer as string (e.g. "1")
+        - enum integer (e.g. 1)
+        """
+        if isinstance(enum_value, int):
+            if str(enum_value) in enum_type:
+                return enum_value
+            raise ValueError(f"Enum value out of range: {enum_value}")
+
+        if not isinstance(enum_value, str):
+            raise ValueError(f"Enum value must be str or int, got: {type(enum_value).__name__}")
+
+        if enum_value in enum_type:
+            return int(enum_value)
+
+        matches = [int(k) for k, v in enum_type.items() if v == enum_value]
+        if len(matches) == 1:
+            return matches[0]
+        if len(matches) > 1:
+            raise ValueError(f"Ambiguous enum name: {enum_value}")
+
+        try:
+            as_int = int(enum_value)
+            if str(as_int) in enum_type:
+                return as_int
+        except ValueError:
+            pass
+
+        raise ValueError(f"Enum value not found: {enum_value}")
+
+    def _format_enum_for_xpath(self, raw_value, enum_type):
+        """
+        Format enum key value for XPath predicates.
+
+        Converts integer enum values to their symbolic names when available.
+        """
+        key = str(raw_value)
+        if key in enum_type:
+            return enum_type[key]
+        return raw_value
     
     def _resolve_path(self, xpath):
         """
@@ -180,17 +297,12 @@ class CORECONFDatabase:
                             if 'int' in dtype:
                                 key_value = int(key_value)
                             elif dtype == 'identityref':
-                                # Convert identity name to SID
-                                # Try without leading slash first
-                                if key_value in self.model.sids:
-                                    key_value = self.model.sids[key_value]
-                                else:
-                                    # Try with leading slash
-                                    identity_path = "/" + key_value
-                                    if identity_path in self.model.sids:
-                                        key_value = self.model.sids[identity_path]
-                                    else:
-                                        raise ValueError(f"Identity not found in model: {key_value}")
+                                # Convert identity name to SID.
+                                # Unqualified values are accepted when unambiguous.
+                                key_value = self._resolve_identity_to_sid(key_value)
+                        elif isinstance(dtype, dict):
+                            # Enumeration key: accept symbolic names and numeric forms.
+                            key_value = self._resolve_enum_to_int(dtype, key_value)
                     
                     key_values.append(key_value)
         
@@ -446,7 +558,9 @@ class CORECONFDatabase:
 
                 key_value = raw_value
                 if key_dtype == "identityref":
-                    key_value = self.model.ids.get(raw_value, raw_value)
+                    key_value = self._format_identity_for_xpath(raw_value)
+                elif isinstance(key_dtype, dict): # enum
+                    key_value = self._format_enum_for_xpath(raw_value, key_dtype)
 
                 parts.append(f"[{key_leaf_name}='{key_value}']")
             return "".join(parts)

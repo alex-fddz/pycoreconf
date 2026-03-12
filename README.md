@@ -172,7 +172,7 @@ Use `get_keys` on a list XPath to retrieve key predicates for existing entries.
 # Return all key predicates for current list entries
 filters = db.get_keys("/measurements/measurement")
 # Example output:
-# ["[type='atmos-41-weather-station:solar-radiation'][id='0']", ...]
+# ["[type='solar-radiation'][id='0']", ...]
 
 # Rebuild full XPaths from returned predicates
 paths = [f"/measurements/measurement{f}" for f in filters]
@@ -182,8 +182,14 @@ You can also call it with predicates:
 
 ```python
 db.get_keys("/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']")
-# -> ["[type='atmos-41-weather-station:solar-radiation'][id='0']"]
+# -> ["[type='solar-radiation'][id='0']"]
 ```
+
+For `identityref` keys, `get_keys` returns short names when unambiguous;
+it keeps `module:identity` when multiple loaded modules define the same short name.
+
+For `enum` keys, `get_keys` returns symbolic names (for example `delta`)
+instead of integer values when the mapping is available in the SID model.
 
 ### Key Features
 
