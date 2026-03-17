@@ -32,7 +32,7 @@ def main():
         cbor_data = f.read()
     
     # Load into database
-    db = ccm.loadDB(cbor_data)
+    db = ccm.create_database(cbor_data)
     print("[+] Database loaded")
     
     # Get the current JSON structure to understand it

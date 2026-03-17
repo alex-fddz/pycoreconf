@@ -132,11 +132,11 @@ import pycoreconf
 model = pycoreconf.CORECONFModel("ietf-schc@2026-02-24.sid")
 
 # Create an empty database
-db = model.loadDB()
+db = model.create_database()
 
 # Load from existing CBOR data
 cbor_data = b'...'  # CBOR encoded bytes
-db = model.loadDB(cbor_data)
+db = model.create_database(cbor_data)
 ```
 
 ### Accessing and Modifying Data

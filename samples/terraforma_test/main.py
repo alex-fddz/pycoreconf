@@ -218,7 +218,7 @@ def main():
     
     # Load CBOR data into database
     print("\n[*] Loading CBOR data into database...")
-    db = ccm.loadDB(cbor_data)
+    db = ccm.create_database(cbor_data)
     print("[+] Database loaded")
 
     # Test retrieving list keys for all measurement entries

@@ -50,7 +50,7 @@ class TestGetKeys(unittest.TestCase):
         )
 
         model = pycoreconf.CORECONFModel(sid_path)
-        db = model.loadDB()
+        db = model.create_database()
 
         db["/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']"] = {}
         db["/measurements/measurement[type='atmos-41-weather-station:wind-speed'][id='1']"] = {}
@@ -74,7 +74,7 @@ class TestGetKeys(unittest.TestCase):
         )
 
         model = pycoreconf.CORECONFModel(sid_path)
-        db = model.loadDB()
+        db = model.create_database()
 
         keys = db.get_keys(
             "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='2']"
@@ -94,7 +94,7 @@ class TestGetKeys(unittest.TestCase):
         )
 
         model = pycoreconf.CORECONFModel(sid_path)
-        db = model.loadDB()
+        db = model.create_database()
 
         db["/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/sample-count"] = 123
 

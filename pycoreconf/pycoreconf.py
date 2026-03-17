@@ -515,7 +515,7 @@ class CORECONFModel(ModelSID):
         # print("Config validation OK.")
         return True
 
-    def loadDB(self, cbor_data = cbor.dumps({})):
+    def create_database(self, cbor_data = cbor.dumps({})):
         """
         Load CBOR data into a high-level database interface.
         
@@ -526,7 +526,7 @@ class CORECONFModel(ModelSID):
             CORECONFDatabase instance for easy navigation and modification
         
         Example:
-            db = model.loadDB(cbor_data)
+            db = model.create_database(cbor_data)
             value = db["/measurements/measurement[type='solar-radiation'][id='0']/value"]
             db["/measurements/measurement[type='solar-radiation'][id='0']/value"] = 42
         """

@@ -18,7 +18,7 @@ class TestEmptyDbListCreation(unittest.TestCase):
         )
 
         model = pycoreconf.CORECONFModel(sid_path)
-        db = model.loadDB()
+        db = model.create_database()
 
         xpath = "/schc/rule[rule-id-value='10'][rule-id-length='3']"
         db[xpath] = {}

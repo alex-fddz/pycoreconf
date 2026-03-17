@@ -33,7 +33,7 @@ def example_1_simple_container():
     print("=" * 70)
     
     # Hypothetical usage:
-    # db = model.loadDB(cbor_data)
+    # db = model.create_database(cbor_data)
     
     # READ operations
     # a = db["/root/a"]              # >>> 42
@@ -101,7 +101,7 @@ def example_2_single_level_list():
     print("=" * 70)
     
     # hipothetical usage:
-    # db = model.loadDB(cbor_data)
+    # db = model.create_database(cbor_data)
     
     # READ individual leaf
     # value = db["/root/items[id='1']/data"]     # >>> "Item 1"
@@ -182,7 +182,7 @@ def example_3_list_multiple_keys():
     print("=" * 70)
     
     # hypothetical usage:
-    # db = model.loadDB(cbor_data)
+    # db = model.create_database(cbor_data)
     
     # READ with multiple predicates (order can vary!)
     # temp = db["/root/measurements[category='temp'][index='0']/value"]
@@ -248,7 +248,7 @@ def example_4_nested_containers():
     print("=" * 70)
     
     # hypothetical usage:
-    # db = model.loadDB(cbor_data)
+    # db = model.create_database(cbor_data)
     
     # READ individual leaf
     # p1 = db["/root/config/settings/param1"]     # >>> 42
@@ -318,7 +318,7 @@ def example_5_containers_with_nested_lists():
     print("=" * 70)
     
     # hypothetical usage:
-    # db = model.loadDB(cbor_data)
+    # db = model.create_database(cbor_data)
     
     # READ nested values
     # mtu = db["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth0']/mtu"]
@@ -377,7 +377,7 @@ def example_6_deletions():
     print("=" * 70)
     
     # hypothetical usage:
-    # db = model.loadDB(cbor_data)
+    # db = model.create_database(cbor_data)
     
     # DELETE a single leaf
     # del db["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth0']/mtu"]
@@ -457,7 +457,7 @@ def example_7_identity_references():
     print("=" * 70)
     
     # hypothetical usage:
-    # db = model.loadDB(cbor_data)
+    # db = model.create_database(cbor_data)
     
     # READ identityref values (returned as YANG names)
     # sensor1 = db["/root/sensors[sensor_id='1'][sensor_type='temperature']"]
@@ -512,7 +512,7 @@ Typical usage pattern:
     # 1. SETUP: Create model and load CBOR
     model = pycoreconf.CORECONFModel("schema.sid")
     with open("data.cbor", "rb") as f:
-        db = model.loadDB(f.read())
+        db = model.create_database(f.read())
 
     # 2. READ: Inspect current state
     devices = db["/root/devices"]

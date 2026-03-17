@@ -15,7 +15,7 @@ def main():
     sid_path = "ietf-schc@2026-02-24.sid"
     ccm = pycoreconf.CORECONFModel(sid_path)
 
-    db=ccm.loadDB()
+    db=ccm.create_database()
 
     print(db)
     print(db.to_cbor().hex())
