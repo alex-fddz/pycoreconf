@@ -12,6 +12,7 @@ class TestEmptyDbListCreation(unittest.TestCase):
     def test_create_schc_rule_entry_from_empty_db(self):
         sid_path = os.path.join(
             os.path.dirname(__file__),
+            "..",
             "samples",
             "terraforma_test",
             "ietf-schc@2026-02-24.sid",
