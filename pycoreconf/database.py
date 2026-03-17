@@ -1,13 +1,21 @@
 import json
 import cbor2 as cbor
 
+try:
+    from typing import TYPE_CHECKING
+except Exception:
+    TYPE_CHECKING = False
+
+if TYPE_CHECKING:
+    from .pycoreconf import CORECONFModel
+
 class CORECONFDatabase:
     """
     High-level interface to navigate and modify CORECONF data using XPath-like paths.
     Usage: db["/measurements/measurement[type='solar-radiation'][id='0']/value"]
     """
     
-    def __init__(self, model, cbor_data):
+    def __init__(self, model: "CORECONFModel", cbor_data: bytes):
         """
         Initialize database from CORECONF model and CBOR data.
         
