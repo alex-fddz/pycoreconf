@@ -6,8 +6,6 @@ import json
 import sys
 import os
 
-sys.path.insert(0, '/Volumes/My Passport/work/pycoreconf')
-
 import pycoreconf
 
 def main():
@@ -16,7 +14,7 @@ def main():
     print("=" * 70)
     
     # Load the SID and create the model
-    sid_path = "/Users/laurent/work/terraforma/atmos-41-weather-station@2026-03-02.sid"
+    sid_path = "./samples/terraforma_test/atmos-41-weather-station@2026-03-02.sid"
     
     if not os.path.exists(sid_path):
         print(f"[-] SID file not found at {sid_path}")
@@ -27,7 +25,7 @@ def main():
     print("[+] SID model loaded")
     
     # Load the CBOR test data
-    cbor_path = "/Volumes/My Passport/work/pycoreconf/samples/terraforma_test/test_data.cbor"
+    cbor_path = "./samples/terraforma_test/test_data.cbor"
     print(f"[*] Loading CBOR data: {cbor_path}")
     
     with open(cbor_path, 'rb') as f:
