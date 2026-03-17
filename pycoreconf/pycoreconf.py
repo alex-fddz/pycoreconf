@@ -944,7 +944,67 @@ class CORECONFModel(ModelSID):
 
         return _walk(obj, delta, path, keys)
 
-      
+    def _create_xpath(self, sid, keys=None):
+        """
+        Convert a SID and optional key values to an XPath string.
+
+        This is the inverse of CORECONFDatabase._resolve_path(): given the SID
+        of a target node and the list of key values (in key_mapping order),
+        reconstruct the XPath expression with predicates.
+
+        Args:
+            sid:  integer SID of the target node
+            keys: list of key values in the same positional order as key_mapping
+                  (same format as findSIDR's *keys* argument).
+                  A flat list is expected; for nested lists the values must be
+                  in path order (outermost list first).
+
+        Returns:
+            XPath string, e.g. "/container/list[key='val']/leaf"
+
+        Raises:
+            KeyError: if *sid* is not found in the model.
+
+        Example:
+            xpath = model._create_xpath(1234, keys=['solar-radiation', '0'])
+            # → "/measurements/measurement[type='solar-radiation'][id='0']/value"
+        """
+        yang_path = self.ids.get(sid)
+        if yang_path is None:
+            raise KeyError(f"SID {sid} not found in model")
+
+        segments = [s for s in yang_path.split('/') if s]
+        xpath_parts = []
+        current_path = ""
+        key_index = 0
+        keys = keys or []
+
+        for segment in segments:
+            # Strip module prefix: "ietf-foo:container" → "container"
+            local_name = segment.split(':')[-1]
+            current_path = current_path + "/" + segment
+
+            seg_sid = self.sids.get(current_path)
+
+            # If this segment is a list node, inject key predicates
+            if seg_sid is not None and str(seg_sid) in self.key_mapping:
+                key_sids = self.key_mapping[str(seg_sid)]
+                predicates = []
+                for key_sid in key_sids:
+                    if key_index < len(keys):
+                        key_path = self.ids.get(key_sid)
+                        key_name = key_path.rstrip('/').split('/')[-1].split(':')[-1]
+                        predicates.append(f"{key_name}='{keys[key_index]}'")
+                        key_index += 1
+                if predicates:
+                    xpath_parts.append(local_name + "".join(f"[{p}]" for p in predicates))
+                else:
+                    xpath_parts.append(local_name)
+            else:
+                xpath_parts.append(local_name)
+
+        return "/" + "/".join(xpath_parts)
+
 
     def toJSON(self, cbor_data, return_pydict=False): 
         """
