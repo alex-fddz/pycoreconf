@@ -15,7 +15,7 @@ class CORECONFDatabase:
     Usage: db["/measurements/measurement[type='solar-radiation'][id='0']/value"]
     """
     
-    def __init__(self, model: "CORECONFModel", cbor_data: bytes):
+    def __init__(self, model: "CORECONFModel", cbor_data: bytes = None):
         """
         Initialize database from CORECONF model and CBOR data.
         
