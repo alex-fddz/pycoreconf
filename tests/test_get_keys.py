@@ -46,7 +46,7 @@ class TestGetKeys(unittest.TestCase):
             os.path.dirname(__file__),
             "..",
             "samples",
-            "terraforma_test",
+            "terraforma",
             "atmos-41-weather-station@2026-03-02.sid",
         )
 
@@ -71,7 +71,7 @@ class TestGetKeys(unittest.TestCase):
             os.path.dirname(__file__),
             "..",
             "samples",
-            "terraforma_test",
+            "terraforma",
             "atmos-41-weather-station@2026-03-02.sid",
         )
 
@@ -92,7 +92,7 @@ class TestGetKeys(unittest.TestCase):
             os.path.dirname(__file__),
             "..",
             "samples",
-            "terraforma_test",
+            "terraforma",
             "atmos-41-weather-station@2026-03-02.sid",
         )
 

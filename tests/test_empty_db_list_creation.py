@@ -14,7 +14,7 @@ class TestEmptyDbListCreation(unittest.TestCase):
             os.path.dirname(__file__),
             "..",
             "samples",
-            "terraforma_test",
+            "terraforma",
             "ietf-schc@2026-02-24.sid",
         )
 
