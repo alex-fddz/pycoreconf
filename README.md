@@ -73,9 +73,8 @@ import pycoreconf
 
 Create a CORECONF Model object with an associated YANG SID file.
 
-- `sid_files`: A list of path strings to one or more .sid files. Generate using [ltn22/pyang](https://github.com/ltn22/pyang/) module.
+- `sid_files`: A single path string or a list of path strings to one or more .sid files. Generate using [ltn22/pyang](https://github.com/ltn22/pyang/) module.
 - `model_description_file`: Optional model description file used for config validation.
-
 
 ### `ccm.add_modules_path(ietf_modules_loc)`
 
