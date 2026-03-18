@@ -117,9 +117,9 @@ def main():
         print("[!]     - Container B (with predicate keys)")
         print("[!]       - Leaf fields")
         print("[!]")
-        print("[!] The _resolve_path() and findSIDR() code SHOULD handle this correctly because:")
+        print("[!] The _resolve_path() and findSID() code SHOULD handle this correctly because:")
         print("[!]   1. _resolve_path() builds key_values list for each predicate in order")
-        print("[!]   2. findSIDR() consumes keys as it descends through list nodes")
+        print("[!]   2. findSID() consumes keys as it descends through list nodes")
         print("[!]   3. remaining_keys are passed recursively to child nodes")
         
     except Exception as e:

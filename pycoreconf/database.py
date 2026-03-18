@@ -308,7 +308,7 @@ class CORECONFDatabase:
             parent_sid = self.model.sids.get(parent_path)
             
             if parent_sid:
-                result = self.model.findSIDR(self.data, sid=parent_sid, keys=keys)
+                result = self.model.findSID(self.data, sid=parent_sid, keys=keys)
                 if result is None:
                     return None
 
@@ -334,7 +334,7 @@ class CORECONFDatabase:
                     return None
         
         # Default path resolution for container queries
-        result = self.model.findSIDR(self.data, sid=target_sid, keys=keys)
+        result = self.model.findSID(self.data, sid=target_sid, keys=keys)
         
         if result is None:
             return None  # when used in test, this allows checking for non-existence without raising an exception
@@ -421,7 +421,7 @@ class CORECONFDatabase:
         else:
             cbor_value = value
         
-        result = self.model.findSIDR(self.data, sid=target_sid, keys=keys, value=cbor_value)
+        result = self.model.findSID(self.data, sid=target_sid, keys=keys, value=cbor_value)
         
         if result is None:
             # Materialize missing path parts in JSON (containers + list entries).
@@ -542,7 +542,7 @@ class CORECONFDatabase:
         if keys:
             return [_format_predicates_from_values(keys)]
 
-        child = self.model.findSIDR(self.data, sid=target_sid, keys=[], no_keys=True)
+        child = self.model.findSID(self.data, sid=target_sid, keys=[], no_keys=True)
         if child is None:
             return []
 

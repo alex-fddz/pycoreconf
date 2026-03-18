@@ -24,8 +24,8 @@ class _DummyEnumKeyModel:
             "/root/list/id": "uint8",
         }
 
-    def findSIDR(self, *_args, **_kwargs):
-        raise AssertionError("findSIDR should not be called for get_keys() with predicates")
+    def findSID(self, *_args, **_kwargs):
+        raise AssertionError("findSID should not be called for get_keys() with predicates")
 
 
 class TestGetKeys(unittest.TestCase):

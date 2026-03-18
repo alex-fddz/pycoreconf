@@ -280,7 +280,7 @@ class CORECONFModel(ModelSID):
         # Unwrap the ValueClass objects before returning
         return(unwrapValues(obj))
 
-    def findSIDR(self, obj, sid=None, keys=None, value=None, delta=0, path='/', depth=None, no_keys=False):
+    def findSID(self, obj, sid=None, keys=None, value=None, delta=0, path='/', depth=None, no_keys=False):
         """
         Recursive SID lookup/setter that preserves the tree structure.
         Returns {sid: value} when found, otherwise None.
