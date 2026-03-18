@@ -69,30 +69,6 @@ def generate_random_measurement(measurement_type, unit):
         "sample-count": random.randint(100, 10000)
     }
 
-
-def generate_test_data():
-    """Generate random test data following the ATMOS-41 model"""
-    
-    # Select random measurements to include
-    num_measurements = random.randint(3, 8)
-    selected_types = random.sample(list(MEASUREMENT_TYPES.items()), num_measurements)
-    
-    measurements = []
-    for meas_type, unit in selected_types:
-        measurements.append(generate_random_measurement(meas_type, unit))
-    
-    # Create the complete configuration with proper module prefix
-    # The JSON keys must match the SID structure exactly:
-    # /atmos-41-weather-station:measurements
-    config = {
-        "atmos-41-weather-station:measurements": {
-            "measurement": measurements
-        }
-    }
-    
-    return config
-
-
 def generate_full_sequence_data():
     """Generate full test data with all available measurement types"""
 
@@ -149,12 +125,6 @@ def main():
         json.dump(config_data, f, indent=2)
     print(f"[+] JSON data saved to: {json_file}")
 
-    # Save the same data under an explicit full-sequence filename
-    full_json_file = os.path.join(os.path.dirname(__file__), "test_data_full.json")
-    with open(full_json_file, 'w') as f:
-        json.dump(config_data, f, indent=2)
-    print(f"[+] Full sequence JSON data saved to: {full_json_file}")
-    
     # Display the JSON data
     print("\n[*] Generated JSON configuration:")
     print("-" * 70)
