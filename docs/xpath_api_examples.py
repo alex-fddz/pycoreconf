@@ -2,9 +2,9 @@
 """
 XPath Database API - Examples with Abstract Data Models
 
-This file demonstrates the XPath API with abstract, simple examples using
-generic node names (a, b, c, etc.) to make concepts clear without domain-specific
-complexity.
+This file demonstrates the XPath Database API with abstract, simple examples
+using generic node names (a, b, c, etc.) to make concepts clear without
+domain-specific complexity.
 
 Each example is self-contained and shows progressively more complex scenarios.
 """
@@ -100,7 +100,7 @@ def example_2_single_level_list():
     print("EXAMPLE 2: Single-Level List (one key)")
     print("=" * 70)
     
-    # Hypothetical usage:
+    # hipothetical usage:
     # db = model.create_database(cbor_data)
     
     # READ individual leaf
@@ -181,7 +181,7 @@ def example_3_list_multiple_keys():
     print("EXAMPLE 3: List with Multiple Keys")
     print("=" * 70)
     
-    # Hypothetical usage:
+    # hypothetical usage:
     # db = model.create_database(cbor_data)
     
     # READ with multiple predicates (order can vary!)
@@ -247,7 +247,7 @@ def example_4_nested_containers():
     print("EXAMPLE 4: Nested Containers (no lists)")
     print("=" * 70)
     
-    # Hypothetical usage:
+    # hypothetical usage:
     # db = model.create_database(cbor_data)
     
     # READ individual leaf
@@ -317,7 +317,7 @@ def example_5_containers_with_nested_lists():
     print("EXAMPLE 5: Containers with Nested Lists")
     print("=" * 70)
     
-    # Hypothetical usage:
+    # hypothetical usage:
     # db = model.create_database(cbor_data)
     
     # READ nested values
@@ -376,7 +376,7 @@ def example_6_deletions():
     print("EXAMPLE 6: Delete Operations")
     print("=" * 70)
     
-    # Hypothetical usage:
+    # hypothetical usage:
     # db = model.create_database(cbor_data)
     
     # DELETE a single leaf
@@ -456,7 +456,7 @@ def example_7_identity_references():
     print("EXAMPLE 7: Identity References (identityref)")
     print("=" * 70)
     
-    # Hypothetical usage:
+    # hypothetical usage:
     # db = model.create_database(cbor_data)
     
     # READ identityref values (returned as YANG names)
@@ -646,4 +646,4 @@ if __name__ == "__main__":
     print("  - samples/terraforma_test/main.py")
     print("  - test_multilevel_predicates.py")
     print("\nFor full documentation, see:")
-    print("  - XPATH_API_DOCUMENTATION_EN.md")
+    print("  - XPATH_API_DOCUMENTATION.md")

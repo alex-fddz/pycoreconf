@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **XPath Database API** provides a high-level interface for accessing and modifying CORECONF/CBOR data using XPath-like syntax. This API completely hides the complexity of SIDs (Semantic Identifiers) and CBOR structures.
+The **XPath Database API** provides a high-level interface for accessing and modifying CORECONF/CBOR data using an XPath-like syntax. This syntax is a simplified path notation tailored for YANG/CBOR data models and is not compliant with the XML XPath specification. The API completely hides the complexity of SIDs (Semantic Identifiers) and CBOR structures.
 
 ### Advantages
 
