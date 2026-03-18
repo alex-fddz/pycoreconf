@@ -80,3 +80,5 @@ env.bak/
 venv.bak/
 uv.lock
 
+# Sample outputs
+samples/**/generated_*
