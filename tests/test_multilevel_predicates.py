@@ -3,7 +3,6 @@
 Test XPath navigation avec prédicats à plusieurs niveaux.
 """
 import json
-import sys
 import os
 
 import pycoreconf

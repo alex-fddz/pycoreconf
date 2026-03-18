@@ -8,12 +8,8 @@ import sys
 import os
 import json
 import random
-from datetime import datetime
-import cbor2 as cbor
 import pprint
 
-# Add parent directory to path to import pycoreconf
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import pycoreconf
 
