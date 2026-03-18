@@ -28,7 +28,7 @@ pyd = ccm.toJSON(cbor_data, return_pydict=True)
 module_key = list(pyd.keys())[0] # Remove module key
 cfg = toLibconf(pyd[module_key])
 
-cfg_save_f = "config_data.cfg"
+cfg_save_f = "generated_data.cfg"
 with open(cfg_save_f, 'w') as f:
     f.write(cfg)
 print(f"Saved to {cfg_save_f}!")

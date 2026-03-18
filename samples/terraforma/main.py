@@ -120,7 +120,7 @@ def main():
     print(f"[+] Test data generated ({len(config_data['atmos-41-weather-station:measurements']['measurement'])} measurements)")
     
     # Save to JSON file
-    json_file = os.path.join(os.path.dirname(__file__), "test_data.json")
+    json_file = os.path.join(os.path.dirname(__file__), "generated_data.json")
     with open(json_file, 'w') as f:
         json.dump(config_data, f, indent=2)
     print(f"[+] JSON data saved to: {json_file}")
@@ -140,7 +140,7 @@ def main():
         print(f"[+] CBOR size: {len(cbor_data)} bytes")
         
         # Save CBOR data
-        cbor_file = os.path.join(os.path.dirname(__file__), "test_data.cbor")
+        cbor_file = os.path.join(os.path.dirname(__file__), "generated_data.cbor")
         with open(cbor_file, 'wb') as f:
             f.write(cbor_data)
         print(f"[+] CBOR data saved to: {cbor_file}")
