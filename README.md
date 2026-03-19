@@ -24,6 +24,16 @@ cd pycoreconf
 python3 setup.py install    # this might require root access
 ```
 
+For development and testing (venv):
+
+```
+git clone https://github.com/alex-fddz/pycoreconf.git
+cd pycoreconf
+python3 -m venv .venv
+source .venv/bin/activate # or .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
 ### To uninstall
 
 ```
