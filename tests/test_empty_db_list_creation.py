@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression tests for list-entry creation from an empty DB."""
+"""Regression tests for list-entry creation from an empty datastore."""
 
 import json
 import os
@@ -8,8 +8,8 @@ import unittest
 import pycoreconf
 
 
-class TestEmptyDbListCreation(unittest.TestCase):
-    def test_create_schc_rule_entry_from_empty_db(self):
+class TestEmptyStoreListCreation(unittest.TestCase):
+    def test_create_schc_rule_entry_from_empty_store(self):
         sid_path = os.path.join(
             os.path.dirname(__file__),
             "..",
@@ -19,12 +19,12 @@ class TestEmptyDbListCreation(unittest.TestCase):
         )
 
         model = pycoreconf.CORECONFModel(sid_path)
-        db = model.create_database()
+        ds = model.create_datastore()
 
         xpath = "/schc/rule[rule-id-value='10'][rule-id-length='3']"
-        db[xpath] = {}
+        ds[xpath] = {}
 
-        result = json.loads(db.to_json())
+        result = json.loads(ds.to_json())
         self.assertIn("ietf-schc:schc", result)
         self.assertIn("rule", result["ietf-schc:schc"])
 

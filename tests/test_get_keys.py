@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unit tests for CORECONFDatabase.get_keys()."""
+"""Unit tests for CORECONFDatastore.get_keys()."""
 
 import os
 import unittest
@@ -30,14 +30,14 @@ class _DummyEnumKeyModel:
 
 class TestGetKeys(unittest.TestCase):
     def test_enum_key_is_converted_both_directions(self):
-        db = pycoreconf.CORECONFDatabase(_DummyEnumKeyModel(), {})
+        ds = pycoreconf.CORECONFDatastore(_DummyEnumKeyModel(), {})
 
-        sid, keys = db._resolve_path("/root/list[mode='delta'][id='7']")
+        sid, keys = ds._resolve_path("/root/list[mode='delta'][id='7']")
         self.assertEqual(sid, 110)
         self.assertEqual(keys, [1, 7])
 
         self.assertEqual(
-            db.get_keys("/root/list[mode='delta'][id='7']"),
+            ds.get_keys("/root/list[mode='delta'][id='7']"),
             ["[mode='delta'][id='7']"],
         )
 
@@ -51,12 +51,12 @@ class TestGetKeys(unittest.TestCase):
         )
 
         model = pycoreconf.CORECONFModel(sid_path)
-        db = model.create_database()
+        ds = model.create_datastore()
 
-        db["/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']"] = {}
-        db["/measurements/measurement[type='atmos-41-weather-station:wind-speed'][id='1']"] = {}
+        ds["/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']"] = {}
+        ds["/measurements/measurement[type='atmos-41-weather-station:wind-speed'][id='1']"] = {}
 
-        keys = db.get_keys("/measurements/measurement")
+        keys = ds.get_keys("/measurements/measurement")
 
         self.assertIsInstance(keys, list)
 
@@ -76,9 +76,9 @@ class TestGetKeys(unittest.TestCase):
         )
 
         model = pycoreconf.CORECONFModel(sid_path)
-        db = model.create_database()
+        ds = model.create_datastore()
 
-        keys = db.get_keys(
+        keys = ds.get_keys(
             "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='2']"
         )
 
@@ -97,15 +97,15 @@ class TestGetKeys(unittest.TestCase):
         )
 
         model = pycoreconf.CORECONFModel(sid_path)
-        db = model.create_database()
+        ds = model.create_datastore()
 
-        db["/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/sample-count"] = 123
+        ds["/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/sample-count"] = 123
 
-        filters = db.get_keys("/measurements/measurement")
+        filters = ds.get_keys("/measurements/measurement")
         self.assertIn("[type='solar-radiation'][id='0']", filters)
 
         path = "/measurements/measurement[type='solar-radiation'][id='0']/sample-count"
-        self.assertEqual(db[path], 123)
+        self.assertEqual(ds[path], 123)
 
 
 if __name__ == "__main__":

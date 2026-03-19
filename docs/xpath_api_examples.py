@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-XPath Database API - Examples with Abstract Data Models
+XPath Datastore API - Examples with Abstract Data Models
 
-This file demonstrates the XPath Database API with abstract, simple examples
+This file demonstrates the XPath Datastore API with abstract, simple examples
 using generic node names (a, b, c, etc.) to make concepts clear without
 domain-specific complexity.
 
@@ -33,28 +33,28 @@ def example_1_simple_container():
     print("=" * 70)
     
     # Hypothetical usage:
-    # db = model.create_database(cbor_data)
+    # ds = model.create_datastore(cbor_data)
     
     # READ operations
-    # a = db["/root/a"]              # >>> 42
-    # b = db["/root/b"]              # >>> "hello"
-    # c = db["/root/c"]              # >>> 3.14
+    # a = ds["/root/a"]              # >>> 42
+    # b = ds["/root/b"]              # >>> "hello"
+    # c = ds["/root/c"]              # >>> 3.14
     
     # WRITE operations
-    # db["/root/a"] = 100            # Set a to 100
-    # db["/root/b"] = "world"        # Set b to "world"
-    # db["/root/c"] *= 2             # Multiply c by 2
+    # ds["/root/a"] = 100            # Set a to 100
+    # ds["/root/b"] = "world"        # Set b to "world"
+    # ds["/root/c"] *= 2             # Multiply c by 2
     
     # Verification
-    # assert db["/root/a"] == 100
-    # assert db["/root/b"] == "world"
-    # assert db["/root/c"] == 6.28
+    # assert ds["/root/a"] == 100
+    # assert ds["/root/b"] == "world"
+    # assert ds["/root/c"] == 6.28
     
     print("""\
 Operations:
-  db["/root/a"]           → Read leaf 'a'
-  db["/root/a"] = 100     → Write to leaf 'a'
-  db["/root/a"] += 10     → In-place operators work!
+  ds["/root/a"]           → Read leaf 'a'
+  ds["/root/a"] = 100     → Write to leaf 'a'
+  ds["/root/a"] += 10     → In-place operators work!
 
 Key points:
   • Direct leaf access possible
@@ -101,18 +101,18 @@ def example_2_single_level_list():
     print("=" * 70)
     
     # hipothetical usage:
-    # db = model.create_database(cbor_data)
+    # ds = model.create_datastore(cbor_data)
     
     # READ individual leaf
-    # value = db["/root/items[id='1']/data"]     # >>> "Item 1"
-    # count = db["/root/items[id='1']/count"]    # >>> 42
+    # value = ds["/root/items[id='1']/data"]     # >>> "Item 1"
+    # count = ds["/root/items[id='1']/count"]    # >>> 42
     
     # READ entire list entry
-    # entry = db["/root/items[id='1']"]
+    # entry = ds["/root/items[id='1']"]
     # # >>> {'id': 1, 'data': 'Item 1', 'count': 42}
     
     # READ entire list
-    # all_items = db["/root/items"]
+    # all_items = ds["/root/items"]
     # # >>> [
     # #     {'id': 0, 'data': 'Item 0', 'count': 5},
     # #     {'id': 1, 'data': 'Item 1', 'count': 42},
@@ -120,22 +120,22 @@ def example_2_single_level_list():
     # # ]
     
     # WRITE leaf in list entry
-    # db["/root/items[id='1']/data"] = "Modified Item"
-    # db["/root/items[id='1']/count"] = 100
+    # ds["/root/items[id='1']/data"] = "Modified Item"
+    # ds["/root/items[id='1']/count"] = 100
     
     # CREATE new entry automatically
-    # db["/root/items[id='3']/data"] = "New Item 3"    # Entry created!
-    # db["/root/items[id='3']/count"] = 999
+    # ds["/root/items[id='3']/data"] = "New Item 3"    # Entry created!
+    # ds["/root/items[id='3']/count"] = 999
     
     print("""\
 Operations:
-  db["/root/items[id='1']/data"]     → Read leaf in list
-  db["/root/items[id='1']"]          → Read entire entry
-  db["/root/items"]                  → Read all entries as list
+  ds["/root/items[id='1']/data"]     → Read leaf in list
+  ds["/root/items[id='1']"]          → Read entire entry
+  ds["/root/items"]                  → Read all entries as list
   
-  db["/root/items[id='1']/count"] = 100  → Modify leaf
-  db["/root/items[id='3']/data"] = "New" → CREATE entry if missing
-  db["/root/items[id='1']/count"] += 10  → In-place operators
+  ds["/root/items[id='1']/count"] = 100  → Modify leaf
+  ds["/root/items[id='3']/data"] = "New" → CREATE entry if missing
+  ds["/root/items[id='1']/count"] += 10  → In-place operators
 
 Key points:
   • Predicates specify list keys: [key='value']
@@ -182,37 +182,37 @@ def example_3_list_multiple_keys():
     print("=" * 70)
     
     # hypothetical usage:
-    # db = model.create_database(cbor_data)
+    # ds = model.create_datastore(cbor_data)
     
     # READ with multiple predicates (order can vary!)
-    # temp = db["/root/measurements[category='temp'][index='0']/value"]
-    # # Same as: db["/root/measurements[index='0'][category='temp']/value"]
+    # temp = ds["/root/measurements[category='temp'][index='0']/value"]
+    # # Same as: ds["/root/measurements[index='0'][category='temp']/value"]
     # # >>> 23.5
     
     # READ entire entry with multiple keys
-    # entry = db["/root/measurements[category='temp'][index='0']"]
+    # entry = ds["/root/measurements[category='temp'][index='0']"]
     # # >>> {'category': 'temp', 'index': 0, 'value': 23.5, 'unit': 'C'}
     
     # WRITE
-    # db["/root/measurements[category='temp'][index='0']/value"] = 25.0
-    # db["/root/measurements[category='humidity'][index='0']/value"] = 65.0
+    # ds["/root/measurements[category='temp'][index='0']/value"] = 25.0
+    # ds["/root/measurements[category='humidity'][index='0']/value"] = 65.0
     
     # CREATE new entries
-    # db["/root/measurements[category='pressure'][index='0']/value"] = 1013.25
-    # db["/root/measurements[category='pressure'][index='0']/unit"] = "hPa"
+    # ds["/root/measurements[category='pressure'][index='0']/value"] = 1013.25
+    # ds["/root/measurements[category='pressure'][index='0']/unit"] = "hPa"
     
     print("""\
 Operations:
   Multiple predicates [key1='val1'][key2='val2'][key3='val3']...
   
-  db["/root/measurements[category='temp'][index='0']/value"]
-  db["/root/measurements[index='0'][category='temp']/value"]  # Order doesn't matter!
+  ds["/root/measurements[category='temp'][index='0']/value"]
+  ds["/root/measurements[index='0'][category='temp']/value"]  # Order doesn't matter!
   
   # Modify
-  db["/root/measurements[category='temp'][index='0']/value"] = 25.0
+  ds["/root/measurements[category='temp'][index='0']/value"] = 25.0
   
   # Create with multiple keys
-  db["/root/measurements[category='pressure'][index='0']/value"] = 1013.25
+  ds["/root/measurements[category='pressure'][index='0']/value"] = 1013.25
 
 Key points:
   • Predicate ORDER doesn't matter (converted to model order internally)
@@ -248,27 +248,27 @@ def example_4_nested_containers():
     print("=" * 70)
     
     # hypothetical usage:
-    # db = model.create_database(cbor_data)
+    # ds = model.create_datastore(cbor_data)
     
     # READ individual leaf
-    # p1 = db["/root/config/settings/param1"]     # >>> 42
-    # p2 = db["/root/config/settings/param2"]     # >>> "config"
+    # p1 = ds["/root/config/settings/param1"]     # >>> 42
+    # p2 = ds["/root/config/settings/param2"]     # >>> "config"
     
     # READ entire subtree
-    # settings = db["/root/config/settings"]
+    # settings = ds["/root/config/settings"]
     # # >>> {'param1': 42, 'param2': 'config', 'param3': 3.14}
     
     # WRITE
-    # db["/root/config/settings/param1"] = 100
-    # db["/root/config/settings/param3"] *= 2
+    # ds["/root/config/settings/param1"] = 100
+    # ds["/root/config/settings/param3"] *= 2
     
     print("""\
 Operations:
-  db["/root/config/settings/param1"]
-  db["/root/config/settings"]
-  db["/root/config"]
+  ds["/root/config/settings/param1"]
+  ds["/root/config/settings"]
+  ds["/root/config"]
   
-  db["/root/config/settings/param1"] = 100
+  ds["/root/config/settings/param1"] = 100
 
 Key points:
   • Containers just add path segments
@@ -318,18 +318,18 @@ def example_5_containers_with_nested_lists():
     print("=" * 70)
     
     # hypothetical usage:
-    # db = model.create_database(cbor_data)
+    # ds = model.create_datastore(cbor_data)
     
     # READ nested values
-    # mtu = db["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth0']/mtu"]
+    # mtu = ds["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth0']/mtu"]
     # # >>> 1500
     
     # READ intermediate containers
-    # eth0 = db["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth0']"]
+    # eth0 = ds["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth0']"]
     # # >>> {'ifname': 'eth0', 'type': 'ethernet', 'mtu': 1500}
     
     # READ entire device
-    # device1 = db["/root/devices/device[device_id='1']"]
+    # device1 = ds["/root/devices/device[device_id='1']"]
     # # >>> {
     # #     'device_id': 1,
     # #     'interfaces': {
@@ -341,16 +341,16 @@ def example_5_containers_with_nested_lists():
     # # }
     
     # WRITE at different levels
-    # db["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth0']/mtu"] = 9000
-    # db["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth2']/type"] = "gigabit"
+    # ds["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth0']/mtu"] = 9000
+    # ds["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth2']/type"] = "gigabit"
     
     print("""\
 Operations:
   Multiple levels with predicates at each list:
-  db["/root/devices/device[id='1']/interfaces/interface[ifname='eth0']/mtu"]
+  ds["/root/devices/device[id='1']/interfaces/interface[ifname='eth0']/mtu"]
          └─ List key 1     └─ List key 2        └─ Leaf value
   
-  db["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth0']/mtu"] = 9000
+  ds["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth0']/mtu"] = 9000
 
 Key points:
   • Predicates appear at each LIST level
@@ -377,35 +377,35 @@ def example_6_deletions():
     print("=" * 70)
     
     # hypothetical usage:
-    # db = model.create_database(cbor_data)
+    # ds = model.create_datastore(cbor_data)
     
     # DELETE a single leaf
-    # del db["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth0']/mtu"]
+    # del ds["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth0']/mtu"]
     # # eth0 still exists, but without mtu field
     
     # DELETE entire interface entry
-    # del db["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth0']"]
+    # del ds["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth0']"]
     # # eth0 is completely removed from the interface list
     
     # DELETE entire device
-    # del db["/root/devices/device[device_id='1']"]
+    # del ds["/root/devices/device[device_id='1']"]
     # # device 1 is completely removed
     
     # Verify deletion
     # try:
-    #     val = db["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth0']/mtu"]
+    #     val = ds["/root/devices/device[device_id='1']/interfaces/interface[ifname='eth0']/mtu"]
     # except KeyError:
     #     print("Successfully deleted")
     
     print("""\
 Operations:
-  del db["/root/devices/device[id='1']/interfaces/interface[ifname='eth0']/mtu"]
+  del ds["/root/devices/device[id='1']/interfaces/interface[ifname='eth0']/mtu"]
       → Deletes ONLY the mtu field, entry still exists
   
-  del db["/root/devices/device[id='1']/interfaces/interface[ifname='eth0']"]
+  del ds["/root/devices/device[id='1']/interfaces/interface[ifname='eth0']"]
       → Deletes entire interface entry, removed from list
   
-  del db["/root/devices/device[id='1']"]
+  del ds["/root/devices/device[id='1']"]
       → Deletes entire device entry
 
 Key points:
@@ -457,31 +457,31 @@ def example_7_identity_references():
     print("=" * 70)
     
     # hypothetical usage:
-    # db = model.create_database(cbor_data)
+    # ds = model.create_datastore(cbor_data)
     
     # READ identityref values (returned as YANG names)
-    # sensor1 = db["/root/sensors[sensor_id='1'][sensor_type='temperature']"]
+    # sensor1 = ds["/root/sensors[sensor_id='1'][sensor_type='temperature']"]
     # print(sensor1['sensor_type'])
     # # >>> 'temperature'  ← Readable name, not SID!
     
     # WRITE new entry with identityref key
-    # db["/root/sensors[sensor_id='3'][sensor_type='pressure']/reading"] = 1013.25
+    # ds["/root/sensors[sensor_id='3'][sensor_type='pressure']/reading"] = 1013.25
     # # Entry created with identityref key 'pressure'
     
     # WRITE/MODIFY identityref values
-    # db["/root/sensors[sensor_id='1'][sensor_type='temperature']/unit"] = 'Celsius'
+    # ds["/root/sensors[sensor_id='1'][sensor_type='temperature']/unit"] = 'Celsius'
     
     print("""\
 Operations:
-  db["/root/sensors[sensor_id='1'][sensor_type='temperature']/reading"]
+  ds["/root/sensors[sensor_id='1'][sensor_type='temperature']/reading"]
                                     └─ Use SHORT identity name!
   
-  result = db["/root/sensors[sensor_id='1'][sensor_type='temperature']"]
+  result = ds["/root/sensors[sensor_id='1'][sensor_type='temperature']"]
   print(result['sensor_type'])
   # >>> 'temperature'  (NOT 'module:temperature', NOT SID)
   
   # Create with identityref key
-  db["/root/sensors[sensor_id='3'][sensor_type='pressure']/reading"] = 1013.25
+  ds["/root/sensors[sensor_id='3'][sensor_type='pressure']/reading"] = 1013.25
 
 Key points:
   • XPath: Use SHORT identity names [sensor_type='temperature']
@@ -512,26 +512,26 @@ Typical usage pattern:
     # 1. SETUP: Create model and load CBOR
     model = pycoreconf.CORECONFModel("schema.sid")
     with open("data.cbor", "rb") as f:
-        db = model.create_database(f.read())
+        ds = model.create_datastore(f.read())
 
     # 2. READ: Inspect current state
-    devices = db["/root/devices"]
+    devices = ds["/root/devices"]
     print(f"Found {len(devices['device'])} devices")
 
     # 3. MODIFY: Change values
     for device in devices['device']:
         dev_id = device['device_id']
-        db[f"/root/devices/device[device_id='{dev_id}']/status"] = "active"
+        ds[f"/root/devices/device[device_id='{dev_id}']/status"] = "active"
 
     # 4. VERIFY: Check modifications
-    assert db[f"/root/devices/device[device_id='1']/status"] == "active"
+    assert ds[f"/root/devices/device[device_id='1']/status"] == "active"
     
     # 5. VIEW: See JSON representation
-    json_data = json.loads(db.to_json())
+    json_data = json.loads(ds.to_json())
     print(json.dumps(json_data, indent=2))
 
     # 6. SAVE: Export modified data
-    cbor_bytes = db.to_cbor()
+    cbor_bytes = ds.to_cbor()
     with open("data_modified.cbor", "wb") as f:
         f.write(cbor_bytes)
     
@@ -553,25 +553,25 @@ def example_9_common_patterns():
     print("""\
 PATTERN 1: Iterate and modify all entries
 ────────────────────────────────────────
-    items_list = db["/root/items"]
+    items_list = ds["/root/items"]
     for item in items_list['item']:
         item_id = item['id']
-        db[f"/root/items[id='{item_id}']/count"] += 1
+        ds[f"/root/items[id='{item_id}']/count"] += 1
 
 PATTERN 2: Safely delete with try/except
 ──────────────────────────────────────────
-    items_list = db["/root/items"]
+    items_list = ds["/root/items"]
     for item in items_list['item']:
         item_id = item['id']
         try:
-            del db[f"/root/items[id='{item_id}']/optional_field"]
+            del ds[f"/root/items[id='{item_id}']/optional_field"]
         except KeyError:
             pass  # Field didn't exist, that's ok
 
 PATTERN 3: Check if entry exists
 ──────────────────────────────────
     try:
-        entry = db["/root/devices/device[id='99']"]
+        entry = ds["/root/devices/device[id='99']"]
         print("Entry exists:", entry)
     except KeyError:
         print("Entry does not exist")
@@ -581,36 +581,36 @@ PATTERN 4: Build complex path dynamically
     def get_interface_mtu(device_id, ifname):
         xpath = f"/root/devices/device[device_id='{device_id}']/" \\
                 f"interfaces/interface[ifname='{ifname}']/mtu"
-        return db[xpath]
+        return ds[xpath]
     
     mtu = get_interface_mtu('1', 'eth0')
 
 PATTERN 5: Clone/copy an entry
 ────────────────────────────────
-    original = db["/root/items[id='1']"]
+    original = ds["/root/items[id='1']"]
     # Make a new copy
     copy_data = original.copy()
     copy_data['id'] = 2
-    db["/root/items[id='2']"] = copy_data
+    ds["/root/items[id='2']"] = copy_data
     # Or directly with field assignment:
-    db["/root/items[id='2']/count"] = original['count']
+    ds["/root/items[id='2']/count"] = original['count']
 
 PATTERN 6: Bulk load keys for later use
 ─────────────────────────────────────────
-    all_items = db["/root/items"]
+    all_items = ds["/root/items"]
     item_ids = [item['id'] for item in all_items['item']]
     print(f"Available IDs: {item_ids}")
 
 PATTERN 7: Conditional updates
 ────────────────────────────────
-    devices = db["/root/devices"]
+    devices = ds["/root/devices"]
     for device in devices['device']:
         dev_id = device['device_id']
-        old_status = db[f"/root/devices/device[device_id='{dev_id}']/status"]
+        old_status = ds[f"/root/devices/device[device_id='{dev_id}']/status"]
         
         if old_status == "inactive":
-            db[f"/root/devices/device[device_id='{dev_id}']/status"] = "active"
-            db[f"/root/devices/device[device_id='{dev_id}']/restart_count"] += 1
+            ds[f"/root/devices/device[device_id='{dev_id}']/status"] = "active"
+            ds[f"/root/devices/device[device_id='{dev_id}']/restart_count"] += 1
 """)
     print()
 
@@ -623,7 +623,7 @@ if __name__ == "__main__":
     print("\n")
     print("╔" + "═" * 68 + "╗")
     print("║" + " " * 68 + "║")
-    print("║" + "  XPath Database API - Comprehensive Examples".center(68) + "║")
+    print("║" + "  XPath Datastore API - Comprehensive Examples".center(68) + "║")
     print("║" + "  Abstract Models (a, b, c, ...)".center(68) + "║")
     print("║" + " " * 68 + "║")
     print("╚" + "═" * 68 + "╝")

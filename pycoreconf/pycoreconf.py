@@ -1,7 +1,7 @@
 # CORECONF Conversion library
 
 from .sid import ModelSID
-from .database import CORECONFDatabase
+from .datastore import CORECONFDatastore
 import json
 import base64
 import cbor2 as cbor
@@ -428,19 +428,19 @@ class CORECONFModel(ModelSID):
         # print("Config validation OK.")
         return True
 
-    def create_database(self, cbor_data = cbor.dumps({})):
+    def create_datastore(self, cbor_data = cbor.dumps({})):
         """
-        Load CBOR data into a high-level database interface.
+        Load CBOR data into a high-level datastore interface.
         
         Args:
             cbor_data: CBOR-encoded data (bytes)
         
         Returns:
-            CORECONFDatabase instance for easy navigation and modification
+            CORECONFDatastore instance for easy navigation and modification
         
         Example:
-            db = model.create_database(cbor_data)
-            value = db["/measurements/measurement[type='solar-radiation'][id='0']/value"]
-            db["/measurements/measurement[type='solar-radiation'][id='0']/value"] = 42
+            ds = model.create_datastore(cbor_data)
+            value = ds["/measurements/measurement[type='solar-radiation'][id='0']/value"]
+            ds["/measurements/measurement[type='solar-radiation'][id='0']/value"] = 42
         """
-        return CORECONFDatabase(self, cbor_data)
+        return CORECONFDatastore(self, cbor_data)

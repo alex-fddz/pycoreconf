@@ -95,15 +95,15 @@ Returns (CBOR encoded) CORECONF configuration data. Validates config data if a m
 
 Returns decoded configuration data as a JSON string (or Python dictionary). Validates config data if a model description file has been provided.
 
-### `db = ccm.create_database(cbor_data=None)`
+### `ds = ccm.create_datastore(cbor_data=None)`
 
-Create a `CORECONFDatabase` object tied to this model, for high-level manipulation of configuration data using XPath-like paths.
+Create a `CORECONFDatastore` object tied to this model, for high-level manipulation of configuration data using XPath-like paths.
 
-- `cbor_data`: CBOR-encoded configuration data. If not provided, an empty database is created.
+- `cbor_data`: CBOR-encoded configuration data. If not provided, an empty datastore is created.
 
-Returns a `CORECONFDatabase` instance.
+Returns a `CORECONFDatastore` instance.
 
-### `db[path]`
+### `ds[path]`
 
 Access or modify configuration data using XPath-like syntax.
 
@@ -123,19 +123,19 @@ Returns the value at the given path when reading.
 
 ```
 # Read a value
-value = db["/measurements/measurement[type='temp'][id='0']/value"]
+value = ds["/measurements/measurement[type='temp'][id='0']/value"]
 
 # Write a value
-db["/measurements/measurement[type='temp'][id='0']/value"] = 42
+ds["/measurements/measurement[type='temp'][id='0']/value"] = 42
 
 # Create entries (auto-created if missing)
-db["/measurements/measurement[type='humidity'][id='1']/value"] = 80
+ds["/measurements/measurement[type='humidity'][id='1']/value"] = 80
 
 # Delete a value or entry
-del db["/measurements/measurement[type='temp'][id='0']"]
+del ds["/measurements/measurement[type='temp'][id='0']"]
 ```
 
-### `db.get_keys(path)`
+### `ds.get_keys(path)`
 
 Retrieve list entry key predicates for a given list path.
 
@@ -143,15 +143,15 @@ Retrieve list entry key predicates for a given list path.
 
 Returns a list of predicate strings identifying existing entries.
 
-### `db.to_cbor()`
+### `ds.to_cbor()`
 
-Export the current database state to CBOR-encoded CORECONF data.
+Export the current datastore state to CBOR-encoded CORECONF data.
 
 Returns CBOR bytes.
 
-### `db.to_json()`
+### `ds.to_json()`
 
-Export the current database state to a JSON string.
+Export the current datastore state to a JSON string.
 
 Returns a JSON string representation of the data.
 

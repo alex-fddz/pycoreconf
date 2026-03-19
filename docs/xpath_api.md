@@ -1,8 +1,8 @@
-# XPath Database API - Documentation
+# XPath Datastore API - Documentation
 
 ## Overview
 
-The **XPath Database API** provides a high-level interface for accessing and modifying CORECONF/CBOR data using an XPath-like syntax. This syntax is a simplified path notation tailored for YANG/CBOR data models and is not compliant with the XML XPath specification. The API completely hides the complexity of SIDs (Semantic Identifiers) and CBOR structures.
+The **XPath Datastore API** provides a high-level interface for accessing and modifying CORECONF/CBOR data using an XPath-like syntax. This syntax is a simplified path notation tailored for YANG/CBOR data models and is not compliant with the XML XPath specification. The API completely hides the complexity of SIDs (Semantic Identifiers) and CBOR structures.
 
 ### Advantages
 
@@ -25,11 +25,11 @@ import pycoreconf
 # Create a model from a SID file
 model = pycoreconf.CORECONFModel("/path/to/your/model.sid")
 
-# Load CBOR data into a database
+# Load CBOR data into a datastore
 with open("data.cbor", "rb") as f:
     cbor_data = f.read()
 
-db = model.create_database(cbor_data)
+ds = model.create_datastore(cbor_data)
 ```
 
 ---
@@ -57,19 +57,19 @@ db = model.create_database(cbor_data)
 
 ```python
 # Access a container
-db["/root/container"]
+ds["/root/container"]
 
 # Access a leaf in a simple container
-db["/root/container/leaf"]
+ds["/root/container/leaf"]
 
 # Access a list entry (1 key)
-db["/items/item[id='1']/value"]
+ds["/items/item[id='1']/value"]
 
 # Access a list entry (2 keys)
-db["/measurements/measurement[type='temp'][id='0']/value"]
+ds["/measurements/measurement[type='temp'][id='0']/value"]
 
 # Access a list entry with identity
-db["/sensors/sensor[category='temperature'][location='room-1']/reading"]
+ds["/sensors/sensor[category='temperature'][location='room-1']/reading"]
 ```
 
 ---
@@ -80,11 +80,11 @@ db["/sensors/sensor[category='temperature'][location='room-1']/reading"]
 
 ```python
 # Read a leaf
-value = db["/measurements/measurement[type='solar'][id='0']/value"]
+value = ds["/measurements/measurement[type='solar'][id='0']/value"]
 print(value)  # >>> 1050
 
 # Read an entire container
-entry = db["/measurements/measurement[type='solar'][id='0']"]
+entry = ds["/measurements/measurement[type='solar'][id='0']"]
 print(entry)
 # >>> {
 #       'type': 'solar-radiation',  # identityref converted to readable name
@@ -95,7 +95,7 @@ print(entry)
 #     }
 
 # Read an entire branch
-all_measurements = db["/measurements"]
+all_measurements = ds["/measurements"]
 ```
 
 ### Read List Keys (`get_keys`)
@@ -103,7 +103,7 @@ all_measurements = db["/measurements"]
 `get_keys` returns list-entry key predicates for a list XPath.
 
 ```python
-filters = db.get_keys("/measurements/measurement")
+filters = ds.get_keys("/measurements/measurement")
 print(filters)
 # ["[type='solar-radiation'][id='0']", ...]
 
@@ -114,7 +114,7 @@ entry_paths = [f"/measurements/measurement{f}" for f in filters]
 With predicates in input, the function returns a single canonical filter string:
 
 ```python
-db.get_keys("/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']")
+ds.get_keys("/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']")
 # ["[type='solar-radiation'][id='0']"]
 ```
 
@@ -137,23 +137,23 @@ For `enum` keys, symbolic names are returned when the SID model provides the map
 
 ```python
 # Write a leaf in a list
-db["/measurements/measurement[type='solar'][id='0']/value"] = 2000
+ds["/measurements/measurement[type='solar'][id='0']/value"] = 2000
 
 # Verify
-assert db["/measurements/measurement[type='solar'][id='0']/value"] == 2000
+assert ds["/measurements/measurement[type='solar'][id='0']/value"] == 2000
 ```
 
 ### In-Place Operators
 
 ```python
 # Increment
-db["/measurements/measurement[type='solar'][id='0']/counter"] += 10
+ds["/measurements/measurement[type='solar'][id='0']/counter"] += 10
 
 # Decrement
-db["/measurements/measurement[type='solar'][id='0']/counter"] -= 5
+ds["/measurements/measurement[type='solar'][id='0']/counter"] -= 5
 
 # Multiplication and other operators also supported!
-db["/measurements/measurement[type='solar'][id='0']/value"] *= 1.5
+ds["/measurements/measurement[type='solar'][id='0']/value"] *= 1.5
 ```
 
 ### Write an Entire Container
@@ -166,7 +166,7 @@ new_entry = {
     'precision': 1
 }
 
-db["/measurements/measurement[type='wind-speed'][id='2']"] = new_entry
+ds["/measurements/measurement[type='wind-speed'][id='2']"] = new_entry
 ```
 
 ### Auto-Create Entries
@@ -175,7 +175,7 @@ When writing, if a list entry doesn't exist, it is **automatically created**:
 
 ```python
 # This entry doesn't exist - it will be created!
-db["/measurements/measurement[type='humidity'][id='5']/precision"] = 2
+ds["/measurements/measurement[type='humidity'][id='5']/precision"] = 2
 
 # The entry is now:
 # {
@@ -185,7 +185,7 @@ db["/measurements/measurement[type='humidity'][id='5']/precision"] = 2
 # }
 
 # We can write other fields afterwards:
-db["/measurements/measurement[type='humidity'][id='5']/value"] = 650
+ds["/measurements/measurement[type='humidity'][id='5']/value"] = 650
 ```
 
 ---
@@ -196,10 +196,10 @@ db["/measurements/measurement[type='humidity'][id='5']/value"] = 650
 
 ```python
 # Delete only the 'precision' field
-del db["/measurements/measurement[type='solar'][id='0']/precision"]
+del ds["/measurements/measurement[type='solar'][id='0']/precision"]
 
 # The entry still exists, but without the 'precision' field
-entry = db["/measurements/measurement[type='solar'][id='0']"]
+entry = ds["/measurements/measurement[type='solar'][id='0']"]
 # 'precision' is not in entry
 ```
 
@@ -207,11 +207,11 @@ entry = db["/measurements/measurement[type='solar'][id='0']"]
 
 ```python
 # Delete the entire entry
-del db["/measurements/measurement[type='solar'][id='0']"]
+del ds["/measurements/measurement[type='solar'][id='0']"]
 
 # Reading the entry raises KeyError
 try:
-    db["/measurements/measurement[type='solar'][id='0']/value"]
+    ds["/measurements/measurement[type='solar'][id='0']/value"]
 except KeyError:
     print("Entry was deleted")
 ```
@@ -224,7 +224,7 @@ except KeyError:
 
 ```python
 # Get a JSON representation
-json_str = db.to_json()
+json_str = ds.to_json()
 
 # Use with json.loads()
 import json
@@ -235,7 +235,7 @@ data_dict = json.loads(json_str)
 
 ```python
 # Get binary CBOR data
-cbor_bytes = db.to_cbor()
+cbor_bytes = ds.to_cbor()
 
 # Save
 with open("modified.cbor", "wb") as f:
@@ -257,25 +257,25 @@ model = pycoreconf.CORECONFModel("/path/to/model.sid")
 
 # 2. Load data
 with open("data.cbor", "rb") as f:
-    db = model.create_database(f.read())
+    ds = model.create_datastore(f.read())
 
 # 3. Read a value
-old_value = db["/measurements/measurement[type='temp'][id='0']/value"]
+old_value = ds["/measurements/measurement[type='temp'][id='0']/value"]
 print(f"Old value: {old_value}")
 
 # 4. Modify
-db["/measurements/measurement[type='temp'][id='0']/value"] = old_value + 100
+ds["/measurements/measurement[type='temp'][id='0']/value"] = old_value + 100
 
 # 5. Verify
-new_value = db["/measurements/measurement[type='temp'][id='0']/value"]
+new_value = ds["/measurements/measurement[type='temp'][id='0']/value"]
 print(f"New value: {new_value}")
 
 # 6. Inspect JSON
-json_data = json.loads(db.to_json())
+json_data = json.loads(ds.to_json())
 print(json.dumps(json_data, indent=2))
 
 # 7. Save
-cbor_bytes = db.to_cbor()
+cbor_bytes = ds.to_cbor()
 with open("data_modified.cbor", "wb") as f:
     f.write(cbor_bytes)
 ```
@@ -295,7 +295,7 @@ with open("data_modified.cbor", "wb") as f:
 
 ### ⚠️ Important
 
-- Modifications are done **in memory**; call `db.to_cbor()` to save
+- Modifications are done **in memory**; call `ds.to_cbor()` to save
 - List keys **must be specified** in predicates
 - identityref values must use the **short name** (not full path)
 - A **deep copy** is systematically used to prevent data corruption
@@ -308,7 +308,7 @@ with open("data_modified.cbor", "wb") as f:
 
 ```python
 try:
-    value = db["/invalid/path/that/does/not/exist"]
+    value = ds["/invalid/path/that/does/not/exist"]
 except KeyError as e:
     print(f"Path not found: {e}")
 ```
@@ -318,7 +318,7 @@ except KeyError as e:
 ```python
 try:
     # Trying to use predicates on non-list elements
-    db["/simple_container[key='wrong']/value"]
+    ds["/simple_container[key='wrong']/value"]
 except ValueError as e:
     print(f"Validation error: {e}")
 ```
@@ -345,7 +345,7 @@ except ValueError as e:
 
 ```python
 # Read all measurements
-measurements = db["/measurements"]
+measurements = ds["/measurements"]
 
 # Iterate and increment each sample-count
 for meas in measurements['measurement']:
@@ -353,7 +353,7 @@ for meas in measurements['measurement']:
     meas_id = meas['id']
     
     # Increment
-    db[f"/measurements/measurement[type='{meas_type}'][id='{meas_id}']/sample-count"] += 1
+    ds[f"/measurements/measurement[type='{meas_type}'][id='{meas_id}']/sample-count"] += 1
 ```
 
 ### Pattern: Create a series of entries
@@ -362,8 +362,8 @@ for meas in measurements['measurement']:
 for i in range(5):
     xpath = f"/items/item[id='{i}']"
     # Writing auto-creates the entry
-    db[f"{xpath}/value"] = i * 100
-    db[f"{xpath}/label"] = f"Item_{i}"
+    ds[f"{xpath}/value"] = i * 100
+    ds[f"{xpath}/label"] = f"Item_{i}"
 ```
 
 ### Pattern: Clean up data
@@ -372,7 +372,7 @@ for i in range(5):
 # Delete all 'debug' fields if they exist
 for i in range(10):
     try:
-        del db[f"/measurements/measurement[type='temp'][id='{i}']/debug"]
+        del ds[f"/measurements/measurement[type='temp'][id='{i}']/debug"]
     except KeyError:
         pass  # Field doesn't exist, that's fine
 ```

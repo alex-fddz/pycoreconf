@@ -9,15 +9,15 @@ except Exception:
 if TYPE_CHECKING:
     from .pycoreconf import CORECONFModel
 
-class CORECONFDatabase:
+class CORECONFDatastore:
     """
     High-level interface to navigate and modify CORECONF data using XPath-like paths.
-    Usage: db["/measurements/measurement[type='solar-radiation'][id='0']/value"]
+    Usage: ds["/measurements/measurement[type='solar-radiation'][id='0']/value"]
     """
     
     def __init__(self, model: "CORECONFModel", cbor_data: bytes = None):
         """
-        Initialize database from CORECONF model and CBOR data.
+        Initialize datastore from CORECONF model and CBOR data.
         
         Args:
             model: CORECONFModel instance
@@ -285,7 +285,7 @@ class CORECONFDatabase:
     def __getitem__(self, xpath):
         """
         Get value at XPath.
-        Example: db["/measurements/measurement[type='solar-radiation'][id='0']/value"]
+        Example: ds["/measurements/measurement[type='solar-radiation'][id='0']/value"]
         Returns values with YANG identifiers instead of SIDs, or None if not found.
         """
         import copy
@@ -361,11 +361,11 @@ class CORECONFDatabase:
     def __setitem__(self, xpath, value):
         """
         Set value at XPath.
-        Example: db["/measurements/measurement[type='solar-radiation'][id='0']/value"] = 42
-                 db["/measurements/measurement[type='solar-radiation'][id='0']"] = {...YANG dict...}
+        Example: ds["/measurements/measurement[type='solar-radiation'][id='0']/value"] = 42
+                 ds["/measurements/measurement[type='solar-radiation'][id='0']"] = {...YANG dict...}
         
         Can also create new list entries automatically:
-        Ex: db["/measurements/measurement[type='solar-radiation'][id='1']/precision"] = 3
+        Ex: ds["/measurements/measurement[type='solar-radiation'][id='1']/precision"] = 3
             - Creates the list entry if needed
         """
         import copy
@@ -425,7 +425,7 @@ class CORECONFDatabase:
         
         if result is None:
             # Materialize missing path parts in JSON (containers + list entries).
-            # This allows creation from an empty DB and nested list predicates.
+            # This allows creation from an empty datastore and nested list predicates.
             current_json = json.loads(self.to_json())
             qualified_parts = [p for p in target_path.strip('/').split('/') if p] if target_path else []
 
@@ -507,7 +507,7 @@ class CORECONFDatabase:
         Return list-key predicates for entries under a list XPath.
 
         Example:
-            db.get_keys("/measurements/measurement")
+            ds.get_keys("/measurements/measurement")
             -> ["[type='module:identity'][id='0']", ...]
 
         If XPath includes predicates, returns the corresponding predicate string
@@ -578,21 +578,21 @@ class CORECONFDatabase:
         return self.model.toJSON(self.to_cbor())
 
     def __str__(self):
-        """Return a human-friendly JSON representation for print(db)."""
+        """Return a human-friendly JSON representation for print(ds)."""
         try:
             return json.dumps(json.loads(self.to_json()), indent=2)
         except Exception:
             return self.to_json()
 
     def __repr__(self):
-        """Keep interactive output consistent with print(db)."""
+        """Keep interactive output consistent with print(ds)."""
         return self.__str__()
     
     def __delitem__(self, xpath):
         """
         Delete value at XPath.
-        Example: del db["/measurements/measurement[type='solar-radiation'][id='1']"]
-                 del db["/measurements/measurement[type='solar-radiation'][id='1']/precision"]
+        Example: del ds["/measurements/measurement[type='solar-radiation'][id='1']"]
+                 del ds["/measurements/measurement[type='solar-radiation'][id='1']/precision"]
         """
         import json
         

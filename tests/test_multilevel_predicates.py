@@ -30,13 +30,13 @@ def main():
     with open(cbor_path, 'rb') as f:
         cbor_data = f.read()
     
-    # Load into database
-    db = ccm.create_database(cbor_data)
-    print("[+] Database loaded")
+    # Load into datastore
+    ds = ccm.create_datastore(cbor_data)
+    print("[+] Datastore loaded")
     
     # Get the current JSON structure to understand it
     print("\n[*] Current JSON structure (first 50 lines):")
-    json_output = db.to_json()
+    json_output = ds.to_json()
     json_lines = json_output.split('\n')[:50]
     for line in json_lines:
         print(line)
@@ -46,7 +46,7 @@ def main():
     print("-" * 70)
     try:
         xpath1 = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/value"
-        value1 = db[xpath1]
+        value1 = ds[xpath1]
         print(f"[+] Path: {xpath1}")
         print(f"[+] Value: {value1}")
     except Exception as e:
@@ -60,7 +60,7 @@ def main():
     
     # First, let's understand the measurements structure
     try:
-        measurements = db["/measurements"]
+        measurements = ds["/measurements"]
         if isinstance(measurements, dict):
             print("[+] /measurements is a container:")
             print(json.dumps(measurements, indent=2)[:500])
@@ -74,15 +74,15 @@ def main():
     print("-" * 70)
     try:
         # Access the model's key_mapping to understand which elements are lists
-        if hasattr(db.model, 'key_mapping'):
-            print(f"[+] Found {len(db.model.key_mapping)} list nodes in model")
+        if hasattr(ds.model, 'key_mapping'):
+            print(f"[+] Found {len(ds.model.key_mapping)} list nodes in model")
             # Show a few examples
             count = 0
-            for sid_str, key_sids in list(db.model.key_mapping.items())[:10]:
+            for sid_str, key_sids in list(ds.model.key_mapping.items())[:10]:
                 print(f"    SID {sid_str}: keys = {key_sids}")
                 count += 1
                 if count >= 5:
-                    print(f"    ... and {len(db.model.key_mapping) - 5} more")
+                    print(f"    ... and {len(ds.model.key_mapping) - 5} more")
                     break
     except Exception as e:
         print(f"[-] Error: {e}")
@@ -96,15 +96,15 @@ def main():
     try:
         # Try to set a value deeper
         test_xpath = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/value"
-        current_value = db[test_xpath]
+        current_value = ds[test_xpath]
         print(f"[+] Successfully read at 1-level predicate: {current_value}")
         
         # Now try modifying it
-        db[test_xpath] = current_value + 100
+        ds[test_xpath] = current_value + 100
         print(f"[+] Successfully modified value to {current_value + 100}")
         
         # Read it back to verify
-        new_value = db[test_xpath]
+        new_value = ds[test_xpath]
         print(f"[+] Verified new value: {new_value}")
         
         # Note about multi-level predicates

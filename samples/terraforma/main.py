@@ -177,20 +177,20 @@ def main():
     print("Test completed successfully!")
     print("=" * 70)
 
-    # Test new high-level database API
+    # Test new high-level datastore API
     print("\n" + "=" * 70)
-    print("Testing CORECONFDatabase API (XPath-like syntax)")
+    print("Testing CORECONFDatastore API (XPath-like syntax)")
     print("=" * 70)
     
-    # Load CBOR data into database
-    print("\n[*] Loading CBOR data into database...")
-    db = ccm.create_database(cbor_data)
-    print("[+] Database loaded")
+    # Load CBOR data into datastore
+    print("\n[*] Loading CBOR data into datastore...")
+    ds = ccm.create_datastore(cbor_data)
+    print("[+] Datastore loaded")
 
     # Test retrieving list keys for all measurement entries
     print("\n[*] Testing get_keys() on /measurements/measurement...")
     try:
-        measurement_keys = db.get_keys("/measurements/measurement")
+        measurement_keys = ds.get_keys("/measurements/measurement")
         print(f"[+] Found {len(measurement_keys)} key set(s)")
         pprint.pprint(measurement_keys, width=200)
     except Exception as e:
@@ -202,7 +202,7 @@ def main():
     xpath_entry = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']"
     print(f"\n[*] Reading entire list entry with XPath: {xpath_entry}")
     try:
-        entry = db[xpath_entry]
+        entry = ds[xpath_entry]
         print(f"[+] Complete entry retrieved:")
         pprint.pprint(entry, width=200)
     except Exception as e:
@@ -216,7 +216,7 @@ def main():
     xpath = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/sample-count"
     print(f"\n[*] Reading value with XPath: {xpath}")
     try:
-        sample_count = db[xpath]
+        sample_count = ds[xpath]
         print(f"[+] sample-count = {sample_count}")
     except Exception as e:
         print(f"[-] Error reading: {e}")
@@ -227,7 +227,7 @@ def main():
     xpath_value = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/value"
     print(f"\n[*] Reading value with XPath: {xpath_value}")
     try:
-        value = db[xpath_value]
+        value = ds[xpath_value]
         print(f"[+] value = {value}")
     except Exception as e:
         print(f"[-] Error reading: {e}")
@@ -238,7 +238,7 @@ def main():
     xpath_precision = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/precision"
     print(f"\n[*] Reading value with XPath: {xpath_precision}")
     try:
-        precision = db[xpath_precision]
+        precision = ds[xpath_precision]
         print(f"[+] precision = {precision}")
         
         # Calculate actual value
@@ -251,14 +251,14 @@ def main():
     # Test in-place increment operator (+=)
     print("\n[*] Testing in-place increment operator (+=)...")
     try:
-        initial_count = db[xpath]
+        initial_count = ds[xpath]
         print(f"[+] Initial sample-count = {initial_count}")
         
         # Test += operator
-        db[xpath] += 1
+        ds[xpath] += 1
         print(f"[+] Incremented with +=")
         
-        verify_count = db[xpath]
+        verify_count = ds[xpath]
         print(f"[+] New sample-count = {verify_count}")
         
         if verify_count == initial_count + 1:
@@ -273,7 +273,7 @@ def main():
     # Test that += fails on containers (non-leaf nodes)
     print("\n[*] Testing += on container (should fail)...")
     try:
-        db[xpath_entry] += 1  # Should fail: can't add int to dict
+        ds[xpath_entry] += 1  # Should fail: can't add int to dict
         print("[!] ERROR: += on container should have failed!")
     except TypeError as e:
         print(f"[+] Expected error caught: {type(e).__name__}")
@@ -285,7 +285,7 @@ def main():
     print("\n[*] Writing complete list entry with YANG representation...")
     try:
         xpath_entry = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']"
-        entry = db[xpath_entry]
+        entry = ds[xpath_entry]
         original_entry = entry.copy()
         
         # Modify the entry - change unit and double precision
@@ -296,11 +296,11 @@ def main():
         print(f"[*] Modified: unit='{entry['unit']}', precision={entry['precision']}")
         
         # Write the modified entry (YANG dict → CBOR)
-        db[xpath_entry] = entry
+        ds[xpath_entry] = entry
         print(f"[+] Entry written successfully")
         
         # Verify the write by reading back
-        verified = db[xpath_entry]
+        verified = ds[xpath_entry]
         print(f"[+] Verified: unit='{verified['unit']}', precision={verified['precision']}")
         
         if verified['unit'] == entry['unit'] and verified['precision'] == entry['precision']:
@@ -315,10 +315,10 @@ def main():
     # Export modified data
     print("\n[*] Exporting modified data...")
     try:
-        modified_cbor = db.to_cbor()
+        modified_cbor = ds.to_cbor()
         print(f"[+] CBOR exported, size: {len(modified_cbor)} bytes")
         
-        modified_json = db.to_json()
+        modified_json = ds.to_json()
         print("[+] JSON exported:")
         print("-" * 70)
         print(json.dumps(json.loads(modified_json), indent=2))
@@ -335,11 +335,11 @@ def main():
         print(f"[*] Path to create: {new_xpath}")
         
         # Try to assign precision=3 to a non-existent entry
-        db[new_xpath] = 3
+        ds[new_xpath] = 3
         print(f"[+] Assigned precision=3 to new entry")
         
         # Verify the assignment
-        verify_precision = db[new_xpath]
+        verify_precision = ds[new_xpath]
         print(f"[+] Verified precision = {verify_precision}")
         
         if verify_precision == 3:
@@ -348,7 +348,7 @@ def main():
             # Show the CBOR structure
             print("\n[*] CBOR structure after new entry creation:")
             print("-" * 70)
-            cbor_bytes = db.to_cbor()
+            cbor_bytes = ds.to_cbor()
             print(f"CBOR hex: {cbor_bytes.hex()}")
             print(f"CBOR size: {len(cbor_bytes)} bytes")
             print("-" * 70)
@@ -356,7 +356,7 @@ def main():
             # Convert to JSON
             print("\n[*] JSON representation after new entry creation:")
             print("-" * 70)
-            json_output = db.to_json()
+            json_output = ds.to_json()
             print(json.dumps(json.loads(json_output), indent=2))
             print("-" * 70)
         else:
@@ -371,13 +371,13 @@ def main():
     print("\n[*] Step 1: Deleting precision field only...")
     try:
         precision_xpath = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='1']/precision"
-        del db[precision_xpath]
+        del ds[precision_xpath]
         print(f"[+] Deleted precision field at {precision_xpath}")
         
         # Show JSON after deleting precision
         print("\n[*] JSON representation after deleting precision:")
         print("-" * 70)
-        json_after_precision = db.to_json()
+        json_after_precision = ds.to_json()
         print(json.dumps(json.loads(json_after_precision), indent=2))
         print("-" * 70)
     except Exception as e:
@@ -390,12 +390,12 @@ def main():
     print("\n[*] Step 2: Deleting the entire measurement node...")
     try:
         delete_xpath = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='1']"
-        del db[delete_xpath]
+        del ds[delete_xpath]
         print(f"[+] Deleted entry at {delete_xpath}")
         
         # Verify deletion by trying to read it (should fail)
         try:
-            verify_deleted = db[delete_xpath]
+            verify_deleted = ds[delete_xpath]
             print(f"[!] WARNING: Entry still exists!")
         except KeyError:
             print(f"[+] Verified: Entry successfully deleted")
@@ -403,7 +403,7 @@ def main():
         # Show JSON after deletion
         print("\n[*] JSON representation after deleting the measurement node:")
         print("-" * 70)
-        final_json = db.to_json()
+        final_json = ds.to_json()
         print(json.dumps(json.loads(final_json), indent=2))
         print("-" * 70)
     except Exception as e:
@@ -413,7 +413,7 @@ def main():
         traceback.print_exc()
     
     print("\n" + "=" * 70)
-    print("Database API test completed!")
+    print("Datastore API test completed!")
     print("=" * 70)
 
 if __name__ == "__main__":

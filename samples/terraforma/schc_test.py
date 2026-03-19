@@ -6,30 +6,30 @@ def main():
     sid_path = "ietf-schc@2026-02-24.sid"
     ccm = pycoreconf.CORECONFModel(sid_path)
 
-    db=ccm.create_database()
+    ds = ccm.create_datastore()
 
-    print(db)
-    print(db.to_cbor().hex())
+    print(ds)
+    print(ds.to_cbor().hex())
 
-    db["/schc/rule[rule-id-value='10'][rule-id-length='3']"] = {}
-    db["/schc/rule[rule-id-value='11'][rule-id-length='3']/entry[entry-index='0']"] = {}
+    ds["/schc/rule[rule-id-value='10'][rule-id-length='3']"] = {}
+    ds["/schc/rule[rule-id-value='11'][rule-id-length='3']/entry[entry-index='0']"] = {}
 
-    print(db)
-    print(db.to_cbor().hex())
+    print(ds)
+    print(ds.to_cbor().hex())
 
-    # do stupid thigs with the DB
+    # do stupid thigs with the datastore
 
-    db["/schc/rule[rule-id-value='11'][rule-id-length='3']/entry[entry-index='0']/entry-index"] += 1
+    ds["/schc/rule[rule-id-value='11'][rule-id-length='3']/entry[entry-index='0']/entry-index"] += 1
 
 
-    print(db)
-    print(db.to_cbor().hex())
+    print(ds)
+    print(ds.to_cbor().hex())
 
-    db["/schc/rule[rule-id-value='11'][rule-id-length='3']/entry[entry-index='1']/field-id"] = "ietf-schc:fid-ipv6-version"
+    ds["/schc/rule[rule-id-value='11'][rule-id-length='3']/entry[entry-index='1']/field-id"] = "ietf-schc:fid-ipv6-version"
 
-    print(db)
-    print(db.to_cbor().hex())
-    print(cbor.loads(db.to_cbor()))
+    print(ds)
+    print(ds.to_cbor().hex())
+    print(cbor.loads(ds.to_cbor()))
 
 
 
