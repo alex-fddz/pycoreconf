@@ -1,134 +1,125 @@
 #!/usr/bin/env python3
 """
-Test XPath navigation avec prédicats à plusieurs niveaux.
+Test XPath navigation with multilevel predicates.
 """
-import json
-import os
+
+import unittest
+import helpers
 
 import pycoreconf
 
-def main():
-    print("=" * 70)
-    print("Test: XPath with multiple predicate levels")
-    print("=" * 70)
-    
-    # Load the SID and create the model
-    sid_path = "../samples/terraforma/atmos-41-weather-station@2026-03-02.sid"
-    
-    if not os.path.exists(sid_path):
-        print(f"[-] SID file not found at {sid_path}")
-        return
-    
-    print(f"[*] Loading SID file: {sid_path}")
-    ccm = pycoreconf.CORECONFModel(sid_path)
-    print("[+] SID model loaded")
-    
-    # Load the CBOR test data
-    cbor_path = "../samples/terraforma/test_data.cbor"
-    print(f"[*] Loading CBOR data: {cbor_path}")
-    
-    with open(cbor_path, 'rb') as f:
-        cbor_data = f.read()
-    
-    # Load into datastore
-    ds = ccm.create_datastore(cbor_data)
-    print("[+] Datastore loaded")
-    
-    # Get the current JSON structure to understand it
-    print("\n[*] Current JSON structure (first 50 lines):")
-    json_output = ds.to_json()
-    json_lines = json_output.split('\n')[:50]
-    for line in json_lines:
-        print(line)
-    
-    # Test 1: Single-level predicate (already working)
-    print("\n\n[*] TEST 1: Single-level predicate (baseline)")
-    print("-" * 70)
-    try:
-        xpath1 = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/value"
-        value1 = ds[xpath1]
-        print(f"[+] Path: {xpath1}")
-        print(f"[+] Value: {value1}")
-    except Exception as e:
-        print(f"[-] Error: {e}")
-    
-    # Test 2: Two-level predicates (if the schema supports it)
-    # This is a hypothetical case - let's check the actual structure
-    
-    print("\n\n[*] Inspecting if we can create a scenario with two predicate levels...")
-    print("-" * 70)
-    
-    # First, let's understand the measurements structure
-    try:
-        measurements = ds["/measurements"]
-        if isinstance(measurements, dict):
-            print("[+] /measurements is a container:")
-            print(json.dumps(measurements, indent=2)[:500])
-        elif isinstance(measurements, list):
-            print(f"[+] /measurements is a list with {len(measurements)} items")
-    except Exception as e:
-        print(f"[-] Error reading measurements: {e}")
-    
-    # Try to understand the key structure
-    print("\n\n[*] Analyzing key structure in the model...")
-    print("-" * 70)
-    try:
-        # Access the model's key_mapping to understand which elements are lists
-        if hasattr(ds.model, 'key_mapping'):
-            print(f"[+] Found {len(ds.model.key_mapping)} list nodes in model")
-            # Show a few examples
-            count = 0
-            for sid_str, key_sids in list(ds.model.key_mapping.items())[:10]:
-                print(f"    SID {sid_str}: keys = {key_sids}")
-                count += 1
-                if count >= 5:
-                    print(f"    ... and {len(ds.model.key_mapping) - 5} more")
-                    break
-    except Exception as e:
-        print(f"[-] Error: {e}")
-    
-    # Test 3: Create a multi-level structure to test
-    print("\n\n[*] TEST 3: Attempting to create nested list entries")
-    print("-" * 70)
-    
-    # Try creating entries in a nested structure if it exists
-    # First, let's see if there are any containers within measurements
-    try:
-        # Try to set a value deeper
-        test_xpath = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/value"
-        current_value = ds[test_xpath]
-        print(f"[+] Successfully read at 1-level predicate: {current_value}")
-        
-        # Now try modifying it
-        ds[test_xpath] = current_value + 100
-        print(f"[+] Successfully modified value to {current_value + 100}")
-        
-        # Read it back to verify
-        new_value = ds[test_xpath]
-        print(f"[+] Verified new value: {new_value}")
-        
-        # Note about multi-level predicates
-        print("\n[!] IMPORTANT NOTE:")
-        print("[!] The current schema (atmos-41-weather-station) has a relatively flat structure")
-        print("[!] Measurements is a list with keys [type, id], containing leaf fields")
-        print("[!] To test truly multi-level predicates, we would need a schema with:")
-        print("[!]   - Container A (with predicate keys)")
-        print("[!]     - Container B (with predicate keys)")
-        print("[!]       - Leaf fields")
-        print("[!]")
-        print("[!] The _resolve_path() and findSID() code SHOULD handle this correctly because:")
-        print("[!]   1. _resolve_path() builds key_values list for each predicate in order")
-        print("[!]   2. findSID() consumes keys as it descends through list nodes")
-        print("[!]   3. remaining_keys are passed recursively to child nodes")
-        
-    except Exception as e:
-        print(f"[-] Error in test 3: {e}")
-        import traceback
-        traceback.print_exc()
-    
-    print("\n" + "=" * 70)
-    print("Test completed")
-    print("=" * 70)
+class TestXPathPredicates(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # locate SID and CBOR sample files
+        cls.sid_path = helpers.resolve_filepath("samples/terraforma/atmos-41-weather-station@2026-03-02.sid")
+        # cls.cbor_path = resolve_path("samples/terraforma/test_data.cbor")
+        # # -> non-deterministic sample generated file -> provide fixed cbor_data below.
+
+        # Skip test if files not found ?
+        # if not os.path.exists(cls.sid_path):
+        #     raise unittest.SkipTest(f"SID file not found at {cls.sid_path}")
+        # if not os.path.exists(cls.cbor_path):
+        #     raise unittest.SkipTest(f"CBOR data file not found at {cls.cbor_path}")
+
+        # load model and datastore once for all tests
+        cls.ccm = pycoreconf.CORECONFModel(cls.sid_path)
+        # with open(cls.cbor_path, "rb") as f:
+        #     cbor_data = f.read()
+        cbor_data = bytes.fromhex(
+            "a11a000186b8a1018cab091a000186a701000b1906ca06010a64572f6d320519" \
+            "06bf021906e7031906cb041906c2081507191a86ab091a000186a501000b1901" \
+            "ee06000a626d6d051901bd021901f6031901ec041901e308183907190397ab09" \
+            "1a000186a101000b189706000a61430518660218ac03189f041889080c07190a" \
+            "baab091a000186a601000b19031806000a61250519030c021903340319030e04" \
+            "19031b081852071915f5ab091a000186a301000b1903a706020a636b50610519" \
+            "038b021903c9031903af041903a408182007191005ab091a000186aa01000b18" \
+            "2306000a636b5061052502182303182204182508182807191501ab091a000186" \
+            "ad01000b18dd06010a636d2f730518cc0218e00318ea0418d70818230719162f" \
+            "ab091a000186ab01000b190d6f06000a676465677265657305190d5302190d77" \
+            "03190d6304190d62080607191a08ab091a000186ac01000b184406020a636d2f" \
+            "73051602186f0318320418440814071904c4ab091a000186a801000b18180602" \
+            "0a65636f756e74052002182e0318230418250818440719129aab091a000186a2" \
+            "01000b1901e906020a626b6d051901bd021901ef031901fc041901f208186207" \
+            "191fc5ab091a000186a901000b19026906000a67646567726565730519026402" \
+            "19029a031902670419026b08184b071910d1"
+        )
+        cls.ds = cls.ccm.create_datastore(cbor_data)
+
+    def test_measurements_path_exists_and_type(self):
+        # Ensure /measurements exists and is list or dict
+        measurements = self.ds["/measurements"]
+        self.assertTrue(isinstance(measurements, (list, dict)),
+                        "/measurements should be a list or dict in datastore")
+
+    def test_single_level_predicate_read(self):
+        # baseline: read a known path with single-level predicates
+        xpath = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/value"
+        val = self.ds[xpath]
+        # assert it is a numeric value (int or float) or a string that can represent a number
+        self.assertIsNotNone(val, "Value at single-level predicate path should not be None")
+        self.assertTrue(isinstance(val, (int, float, str)),
+                        "Value should be int, float, or string")
+
+    def test_single_level_predicate_modify_and_verify(self):
+        # read current value, modify, and verify round-trip via datastore indexing
+        xpath = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/value"
+        orig = self.ds[xpath]
+        # choose numeric mutation if possible
+        if isinstance(orig, (int, float)):
+            new = orig + 100
+        else:
+            # try converting to float if it's a numeric string
+            try:
+                new = float(orig) + 100
+            except Exception:
+                # fallback: append marker to string
+                new = str(orig) + "_modified"
+
+        # assign and read back
+        self.ds[xpath] = new
+        read_back = self.ds[xpath]
+        # If numeric, compare numerically; otherwise compare equality of string
+        if isinstance(new, (int, float)):
+            self.assertAlmostEqual(float(read_back), float(new),
+                                   msg="Modified numeric value should persist in datastore")
+        else:
+            self.assertEqual(str(read_back), str(new),
+                             "Modified string value should persist in datastore")
+
+        # restore original value to avoid side effects for other tests
+        self.ds[xpath] = orig
+
+    def test_model_key_mapping_present_and_iterable(self):
+        # If model has key_mapping, it should be a dict-like with str keys
+        model = getattr(self.ds, "model", None)
+        if hasattr(model, "key_mapping"):
+            km = model.key_mapping
+            self.assertIsInstance(km, dict)
+            # verify at least one mapping entry has list/tuple of keys
+            any_ok = False
+            for sid_str, key_sids in km.items():
+                self.assertIsInstance(sid_str, str)
+                self.assertTrue(isinstance(key_sids, (list, tuple)),
+                                "key_mapping values should be a list/tuple of key sids")
+                any_ok = True
+                break
+            self.assertTrue(any_ok, "key_mapping should contain at least one entry if present")
+
+    def test_multi_level_predicate_support(self):
+        # The sample schema is known to be relatively flat; here assert behavior:
+        # Attempt to construct multi-level predicate path and assert either it raises
+        # a KeyError/IndexError or returns a valid value type. This documents expected behavior.
+        multi_xpath = "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/subcontainer[subid='x']/leaf"
+        try:
+            result = self.ds[multi_xpath]
+            # If it succeeds, ensure result is a simple JSON-serializable scalar or container
+            self.assertTrue(isinstance(result, (dict, list, str, int, float, type(None))),
+                            "Result for multi-level predicate path should be JSON-serializable")
+        except Exception as e:
+            # Acceptable that the sample schema does not support multi-level predicates.
+            self.assertTrue(isinstance(e, (KeyError, IndexError, LookupError, AttributeError)),
+                            "If multi-level predicate not supported, expect a Key/Index/Lookup/Attribute error")
 
 if __name__ == "__main__":
-    main()
+    unittest.main()

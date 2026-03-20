@@ -1,22 +1,16 @@
 #!/usr/bin/env python3
 """Regression tests for list-entry creation from an empty datastore."""
 
-import json
-import os
 import unittest
+import json
+import helpers
 
 import pycoreconf
 
 
 class TestEmptyStoreListCreation(unittest.TestCase):
     def test_create_schc_rule_entry_from_empty_store(self):
-        sid_path = os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "samples",
-            "terraforma",
-            "ietf-schc@2026-02-24.sid",
-        )
+        sid_path = helpers.resolve_filepath("samples/terraforma/ietf-schc@2026-02-24.sid")
 
         model = pycoreconf.CORECONFModel(sid_path)
         ds = model.create_datastore()

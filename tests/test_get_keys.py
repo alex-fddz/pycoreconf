@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Unit tests for CORECONFDatastore.get_keys()."""
 
-import os
 import unittest
+import helpers
 
 import pycoreconf
 
@@ -42,13 +42,7 @@ class TestGetKeys(unittest.TestCase):
         )
 
     def test_get_keys_on_measurement_list(self):
-        sid_path = os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "samples",
-            "terraforma",
-            "atmos-41-weather-station@2026-03-02.sid",
-        )
+        sid_path = helpers.resolve_filepath("samples/terraforma/atmos-41-weather-station@2026-03-02.sid")
 
         model = pycoreconf.CORECONFModel(sid_path)
         ds = model.create_datastore()
@@ -67,13 +61,7 @@ class TestGetKeys(unittest.TestCase):
         self.assertCountEqual(keys, expected)
 
     def test_get_keys_with_predicates(self):
-        sid_path = os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "samples",
-            "terraforma",
-            "atmos-41-weather-station@2026-03-02.sid",
-        )
+        sid_path = helpers.resolve_filepath("samples/terraforma/atmos-41-weather-station@2026-03-02.sid")
 
         model = pycoreconf.CORECONFModel(sid_path)
         ds = model.create_datastore()
@@ -88,13 +76,7 @@ class TestGetKeys(unittest.TestCase):
         )
 
     def test_compact_identity_filter_is_reusable(self):
-        sid_path = os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "samples",
-            "terraforma",
-            "atmos-41-weather-station@2026-03-02.sid",
-        )
+        sid_path = helpers.resolve_filepath("samples/terraforma/atmos-41-weather-station@2026-03-02.sid")
 
         model = pycoreconf.CORECONFModel(sid_path)
         ds = model.create_datastore()
