@@ -176,3 +176,9 @@ Returns a python dictionary with configuration keys/leaves substituted by their 
 - `config_pydict`: Python dictionary holding configuration data, with SID delta values as keys.
 
 Returns a python dictionary with SID delta keys substituted by their corresponding leaf identifiers.
+
+## Tests
+
+```
+python3 -m unittest discover -s tests/
+```
