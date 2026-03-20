@@ -17,7 +17,7 @@ class TestPyCoreConf(unittest.TestCase):
 
     # Helper: load a config.json file into a JSON string
     def load_config_file(self, json_filepath):
-        with open(json_filepath, 'r') as f:
+        with open(helpers.resolve_filepath(json_filepath), 'r') as f:
             config_obj = json.load(f)
         return json.dumps(config_obj)
 
