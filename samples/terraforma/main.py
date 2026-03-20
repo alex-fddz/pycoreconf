@@ -153,7 +153,7 @@ def main():
     # Try to decode back
     print("\n[*] Decoding CBOR back to JSON...")
     try:
-        decoded_json = ccm.toJSON(cbor_data)
+        decoded_json = ccm.toJSON(cbor_data, return_pydict=True)
         print("[+] Decoding successful")
         print("\n[*] Decoded JSON configuration:")
         print("-" * 70)
