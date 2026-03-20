@@ -59,12 +59,13 @@ Import the module with:
 import pycoreconf
 ```
 
-### `ccm = pycoreconf.CORECONFModel(*sid_files, model_description_file=None)`
+### `ccm = pycoreconf.CORECONFModel(sid_files, model_description_file=None)`
 
 Create a CORECONF Model object with an associated YANG SID file.
 
-- `sid_files`: One or more paths to .sid files. Generate using [ltn22/pyang](https://github.com/ltn22/pyang/) module.
-- `model_description_file`: Optional model description file. Used for config validation.
+- `sid_files`: A list of path strings to one or more .sid files. Generate using [ltn22/pyang](https://github.com/ltn22/pyang/) module.
+- `model_description_file`: Optional model description file used for config validation.
+
 
 ### `ccm.add_modules_path(ietf_modules_loc)`
 
@@ -72,18 +73,18 @@ Create a CORECONF Model object with an associated YANG SID file.
 
 Returns nothing. Required for decoded configuration data validation.
 
-### `ccm.toCORECONF(config_json)` 
+### `ccm.toCORECONF(config)` 
 
-- `config_json`: JSON object or file containing configuration data.
+- `config`: Configuration data as a dict, JSON string, or path to a .json file.
 
-Returns (CBOR encoded) CORECONF configuration data.
+Returns (CBOR encoded) CORECONF configuration data. Validates config data if a model description file has been provided.
 
 ### `ccm.toJSON(cbor_data, return_pydict=False)`
 
 - `cbor_data`: (CBOR encoded) CORECONF configuration data.
 - `return_pydict`: Return data as a Python dictionary instead (useful if doing further processing or conversions to other formats)
 
-Returns decoded configuration data as a JSON object (or Python dictionary). Validates config data if a model description file has been set.
+Returns decoded configuration data as a JSON string (or Python dictionary). Validates config data if a model description file has been provided.
 
 ### Other methods
 ---
