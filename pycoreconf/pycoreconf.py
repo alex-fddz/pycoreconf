@@ -994,8 +994,20 @@ class CORECONFModel(ModelSID):
                     if key_index < len(keys):
                         key_path = self.ids.get(key_sid)
                         key_name = key_path.rstrip('/').split('/')[-1].split(':')[-1]
-                        predicates.append(f"{key_name}='{keys[key_index]}'")
+                        key_val = keys[key_index]
                         key_index += 1
+                        # Identityref: numeric SID → resolve to "module:name"
+                        key_type = self.types.get(key_path)
+                        if isinstance(key_val, int):
+                            if key_type == 'identityref':
+                                resolved = self.ids.get(key_val)
+                                if resolved:
+                                    key_val = resolved
+                            elif isinstance(key_type, dict):  # enum: {"0": "name", ...}
+                                resolved = key_type.get(str(key_val))
+                                if resolved:
+                                    key_val = resolved
+                        predicates.append(f"{key_name}='{key_val}'")
                 if predicates:
                     xpath_parts.append(local_name + "".join(f"[{p}]" for p in predicates))
                 else:
