@@ -6,6 +6,11 @@ import base64
 import cbor2 as cbor
 
 
+class ConfigValidationError(Exception):
+    """Raised when config validation fails; wraps the original exception."""
+    pass
+
+
 class ValueClass:
     """
     Wrapper class to encapsulate objects through the iteration
@@ -664,21 +669,34 @@ class CORECONFModel(ModelSID):
         # Unwrap the ValueClass objects before returning
         return(unwrapValues(jsonData))
 
-    def toCORECONF(self, json_data):
+    def toCORECONF(self, config):
         """
-        Convert JSON data or file to CORECONF.
+        Convert JSON data, file, or dict to CORECONF.
         """
 
-        # Convert JSON data or file to Python Dictionary
-        if json_data[-5:] == ".json":
-            with open(json_data, 'r') as f:
-                py_dict = json.load(f)
+        # Work with a python dict
+        if isinstance(config, dict):
+            # "deepcopy"
+            cfg_dict = json.loads(json.dumps(config))
         else:
-            py_dict = json.loads(json_data)
+            if config[-5:] == ".json":
+                # Load the JSON file
+                with open(config, 'r') as f:
+                    cfg_dict = json.load(f)
+            else:
+                # Parse the JSON string
+                cfg_dict = json.loads(config)
+
+        # Attempt to validate the input config: python dict
+        try:
+            valid = self.validateConfig(cfg_dict) # valid -> validated or not
+        except Exception as e:
+            # Add context and preserve the original exception chain
+            raise ConfigValidationError(f"Input config validation failed: {e}") from e
 
         # Transform to CORECONF/CBOR
-        # valid = validateConfig(py_dict) #  ?
-        cc = self.lookupSIDWithoutRecursion(py_dict)
+        cc = self.lookupSIDWithoutRecursion(cfg_dict)
+
         return cbor.dumps(cc)
 
     def lookupIdentifier(self, obj, delta=0, path="/"):
@@ -1025,7 +1043,14 @@ class CORECONFModel(ModelSID):
 
         data = cbor.loads(cbor_data)
         pyd = self.lookupIdentifierWithoutRecursion(data)
-        valid = self.validateConfig(pyd)
+
+        # Attempt to validate the output config
+        try:
+            valid = self.validateConfig(pyd) # valid -> validated or not
+        except Exception as e:
+            # Add context and preserve the original exception chain
+            raise ConfigValidationError(f"Output config validation failed: {e}") from e
+
         # + Option to directly save as file ?
         
         # Return JSON obj / pyDict
