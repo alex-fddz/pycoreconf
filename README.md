@@ -24,6 +24,16 @@ cd pycoreconf
 python3 setup.py install    # this might require root access
 ```
 
+For development and testing (venv):
+
+```
+git clone https://github.com/alex-fddz/pycoreconf.git
+cd pycoreconf
+python3 -m venv .venv
+source .venv/bin/activate # or .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
 ### To uninstall
 
 ```
@@ -63,9 +73,8 @@ import pycoreconf
 
 Create a CORECONF Model object with an associated YANG SID file.
 
-- `sid_files`: A list of path strings to one or more .sid files. Generate using [ltn22/pyang](https://github.com/ltn22/pyang/) module.
+- `sid_files`: A single path string or a list of path strings to one or more .sid files. Generate using [ltn22/pyang](https://github.com/ltn22/pyang/) module.
 - `model_description_file`: Optional model description file used for config validation.
-
 
 ### `ccm.add_modules_path(ietf_modules_loc)`
 
@@ -86,8 +95,67 @@ Returns (CBOR encoded) CORECONF configuration data. Validates config data if a m
 
 Returns decoded configuration data as a JSON string (or Python dictionary). Validates config data if a model description file has been provided.
 
+### `ds = ccm.create_datastore(cbor_data=None)`
+
+Create a `CORECONFDatastore` object tied to this model, for high-level manipulation of configuration data using XPath-like paths.
+
+- `cbor_data`: CBOR-encoded configuration data. If not provided, an empty datastore is created.
+
+Returns a `CORECONFDatastore` instance.
+
+### `ds[path]`
+
+Access or modify configuration data using XPath-like syntax.
+
+- `path`: String representing a path in the YANG data tree (e.g. "/container/list[key='value']/leaf")
+
+Returns the value at the given path when reading.
+
+#### Notes
+
+- Uses a simplified XPath-like syntax (not full XML XPath)
+- Predicates (`[key='value']`) are used to identify list entries
+- Writing to a non-existent path **automatically creates** missing nodes
+- Supports standard Python operations (`=`, `+=`, `del`, etc.)
+- Refer to `docs/xpath_api.md` and `docs/xpath_api_examples.py` for more information.
+
+#### Examples
+
+```
+# Read a value
+value = ds["/measurements/measurement[type='temp'][id='0']/value"]
+
+# Write a value
+ds["/measurements/measurement[type='temp'][id='0']/value"] = 42
+
+# Create entries (auto-created if missing)
+ds["/measurements/measurement[type='humidity'][id='1']/value"] = 80
+
+# Delete a value or entry
+del ds["/measurements/measurement[type='temp'][id='0']"]
+```
+
+### `ds.get_keys(path)`
+
+Retrieve list entry key predicates for a given list path.
+
+- `path`: XPath-like string pointing to a list node
+
+Returns a list of predicate strings identifying existing entries.
+
+### `ds.to_cbor()`
+
+Export the current datastore state to CBOR-encoded CORECONF data.
+
+Returns CBOR bytes.
+
+### `ds.to_json()`
+
+Export the current datastore state to a JSON string.
+
+Returns a JSON string representation of the data.
+
 ### Other methods
----
 
 ### `ccm.validateConfig(config_data)`
 
@@ -108,3 +176,9 @@ Returns a python dictionary with configuration keys/leaves substituted by their 
 - `config_pydict`: Python dictionary holding configuration data, with SID delta values as keys.
 
 Returns a python dictionary with SID delta keys substituted by their corresponding leaf identifiers.
+
+## Tests
+
+```
+python3 -m unittest discover -s tests/
+```

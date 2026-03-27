@@ -1,6 +1,7 @@
 # CORECONF Conversion library
 
 from .sid import ModelSID
+from .datastore import CORECONFDatastore
 import json
 import base64
 import cbor2 as cbor
@@ -40,16 +41,20 @@ def unwrapValues(object):
 
     return object
 
+
 class CORECONFModel(ModelSID):
     """A class to represent the YANG Model through its SID file, used
     to convert to and from CORECONF/CBOR representation."""
 
     def __init__(self, 
-                 sid_files: list[str], 
+                 sid_files: list[str] | str, 
                  model_description_file: str = None):
         
         self.model_description_file = model_description_file
         self.yang_ietf_modules_paths = ["."]
+        # Handle both single string and list of strings
+        if isinstance(sid_files, str):
+            sid_files = [sid_files]
         super().__init__(sid_files)
 
     def add_modules_path(self, path):
@@ -275,6 +280,115 @@ class CORECONFModel(ModelSID):
         # Unwrap the ValueClass objects before returning
         return(unwrapValues(obj))
 
+    def findSID(self, obj, sid=None, keys=None, value=None, delta=0, path='/', depth=None, no_keys=False):
+        """
+        Recursive SID lookup/setter that preserves the tree structure.
+        Returns {sid: value} when found, otherwise None.
+
+        depth (int or None): maximum depth of the returned sub-tree.
+            None / absent → full sub-tree (unbounded).
+            0             → only direct scalar leaves, no nested containers.
+            N             → N levels of nesting below the matched node.
+
+        no_keys (bool): if True and the target SID is a list node, return all
+            entries without requiring keys (CoMI keyless list discovery).
+            Keys are always required when navigating *through* a list to reach
+            a descendant node.
+        """
+
+        if keys is None:
+            keys = []
+
+        def _trim(node, d):
+            """Trim a CBOR sub-tree to at most d levels of nesting."""
+            if d is None:
+                return node
+            if isinstance(node, dict):
+                if d == 0:
+                    return {k: v for k, v in node.items()
+                            if not isinstance(v, (dict, list))}
+                return {k: _trim(v, d - 1) for k, v in node.items()}
+            if isinstance(node, list):
+                return [_trim(e, d) for e in node]
+            return node
+
+        def _walk(node, current_delta, current_path, remaining_keys):
+            if type(node) is dict:
+                for key in list(node.keys()):
+                    p_sid = key + current_delta
+                    identifier = self.ids[p_sid]
+                    
+                    # Check if this SID is a list key marker
+                    if str(p_sid) in self.key_mapping:
+                        # This is a list node, try to match keys
+                        key_sids = self.key_mapping[str(p_sid)]
+                        child_object = node[key]
+
+                        # child_object is directly a list of dictionaries
+                        if type(child_object) is list:
+                            # Target IS the list node itself — return all entries if no_keys
+                            if no_keys and sid is not None and sid == p_sid:
+                                return {p_sid: [_trim(e, depth) for e in child_object]}
+
+                            if len(key_sids) > len(remaining_keys):
+                                raise ValueError("Not enough keys provided for list with key: " + str(p_sid))
+
+                            first_key_values = remaining_keys[:len(key_sids)]
+                            new_keys = remaining_keys[len(key_sids):]
+
+                            # Find matching list entry by comparing key values
+                            for entry in child_object:
+                                match_found = True
+                                for expected_value, k_sid in zip(first_key_values, key_sids):
+                                    entry_element = entry.get(k_sid - p_sid)
+                                    if entry_element != expected_value:
+                                        match_found = False
+                                        break
+
+                                if match_found:
+                                    # If this is the target SID, return the matched entry
+                                    if sid is not None and sid == p_sid:
+                                        if value is None:
+                                            return {p_sid: _trim(entry, depth)}
+                                        entry.update(value) if isinstance(value, dict) else entry
+                                        return {p_sid: _trim(entry, depth)}
+                                    
+                                    # Continue exploring within this entry
+                                    result = _walk(entry, p_sid, identifier, new_keys)
+                                    if result is not None:
+                                        return result
+                                    break
+                        continue
+
+                    # Regular node (not a list key)
+                    # Check if we found the target SID
+                    if sid is not None and sid == p_sid:
+                        if value is None:
+                            return {p_sid: _trim(node[key], depth)}
+                        node[key] = value
+                        return {p_sid: _trim(value, depth)}
+
+                    # Regular node traversal
+                    child_object = node[key]
+                    result = _walk(child_object, p_sid, identifier, remaining_keys)
+                    if result is not None:
+                        return result
+
+                return None
+
+            if type(node) is list:
+                for element in node:
+                    result = _walk(element, current_delta, current_path, remaining_keys)
+                    if result is not None:
+                        return result
+                return None
+
+            return None
+
+        return _walk(obj, delta, path, keys)
+
+      
+
     def toJSON(self, cbor_data, return_pydict=False): 
         """
         Convert CORECONF (CBOR) data to JSON object (or Python dictionary).
@@ -295,6 +409,8 @@ class CORECONFModel(ModelSID):
         # Return JSON obj / pyDict
         return pyd if return_pydict else json.dumps(pyd) 
 
+
+
     def validateConfig(self, config):
         """
         Validate Python Dictionary config against module specification.
@@ -311,3 +427,20 @@ class CORECONFModel(ModelSID):
         data.validate()
         # print("Config validation OK.")
         return True
+
+    def create_datastore(self, cbor_data = cbor.dumps({})):
+        """
+        Load CBOR data into a high-level datastore interface.
+        
+        Args:
+            cbor_data: CBOR-encoded data (bytes)
+        
+        Returns:
+            CORECONFDatastore instance for easy navigation and modification
+        
+        Example:
+            ds = model.create_datastore(cbor_data)
+            value = ds["/measurements/measurement[type='solar-radiation'][id='0']/value"]
+            ds["/measurements/measurement[type='solar-radiation'][id='0']/value"] = 42
+        """
+        return CORECONFDatastore(self, cbor_data)
