@@ -1,0 +1,389 @@
+{
+  "ietf-sid-file:sid-file": {
+    "module-name": "atmos-41-weather-station",
+    "module-revision": "2026-03-02",
+    "sid-file-status": "unpublished",
+    "assignment-range": [
+      {
+        "entry-point": "100000",
+        "size": "400"
+      }
+    ],
+    "item": [
+      {
+        "namespace": "module",
+        "identifier": "atmos-41-weather-station",
+        "status": "unstable",
+        "sid": "100000"
+      },
+      {
+        "namespace": "identity",
+        "identifier": "air-temperature",
+        "status": "unstable",
+        "sid": "100001"
+      },
+      {
+        "namespace": "identity",
+        "identifier": "average-distance",
+        "status": "unstable",
+        "sid": "100002"
+      },
+      {
+        "namespace": "identity",
+        "identifier": "barometric-pressure",
+        "status": "unstable",
+        "sid": "100003"
+      },
+      {
+        "namespace": "identity",
+        "identifier": "measurement-type",
+        "status": "unstable",
+        "sid": "100004"
+      },
+      {
+        "namespace": "identity",
+        "identifier": "precipitation",
+        "status": "unstable",
+        "sid": "100005"
+      },
+      {
+        "namespace": "identity",
+        "identifier": "relative-humidity",
+        "status": "unstable",
+        "sid": "100006"
+      },
+      {
+        "namespace": "identity",
+        "identifier": "solar-radiation",
+        "status": "unstable",
+        "sid": "100007"
+      },
+      {
+        "namespace": "identity",
+        "identifier": "strike-count",
+        "status": "unstable",
+        "sid": "100008"
+      },
+      {
+        "namespace": "identity",
+        "identifier": "tilt",
+        "status": "unstable",
+        "sid": "100009"
+      },
+      {
+        "namespace": "identity",
+        "identifier": "vapor-pressure",
+        "status": "unstable",
+        "sid": "100010"
+      },
+      {
+        "namespace": "identity",
+        "identifier": "wind-direction",
+        "status": "unstable",
+        "sid": "100011"
+      },
+      {
+        "namespace": "identity",
+        "identifier": "wind-gust",
+        "status": "unstable",
+        "sid": "100012"
+      },
+      {
+        "namespace": "identity",
+        "identifier": "wind-speed",
+        "status": "unstable",
+        "sid": "100013"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurement-push",
+        "status": "unstable",
+        "sid": "100014"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurement-push/last",
+        "status": "unstable",
+        "sid": "100015",
+        "type": "boolean"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurement-push/measurement",
+        "status": "unstable",
+        "sid": "100016"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurement-push/measurement/encoding",
+        "status": "unstable",
+        "sid": "100017",
+        "type": {
+          "0": "direct",
+          "1": "delta"
+        }
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurement-push/measurement/id",
+        "status": "unstable",
+        "sid": "100018",
+        "type": "uint8"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurement-push/measurement/precision",
+        "status": "unstable",
+        "sid": "100019",
+        "type": "uint8"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurement-push/measurement/start-time",
+        "status": "unstable",
+        "sid": "100020",
+        "type": "uint32"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurement-push/measurement/step",
+        "status": "unstable",
+        "sid": "100021",
+        "type": "uint32"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurement-push/measurement/type",
+        "status": "unstable",
+        "sid": "100022",
+        "type": "identityref"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurement-push/measurement/values",
+        "status": "unstable",
+        "sid": "100023",
+        "type": "int64"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurements",
+        "status": "unstable",
+        "sid": "100024"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurements/measurement",
+        "status": "unstable",
+        "sid": "100025"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurements/measurement/id",
+        "status": "unstable",
+        "sid": "100026",
+        "type": "uint8"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurements/measurement/max",
+        "status": "unstable",
+        "sid": "100027",
+        "type": "int64"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurements/measurement/mean",
+        "status": "unstable",
+        "sid": "100028",
+        "type": "int64"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurements/measurement/median",
+        "status": "unstable",
+        "sid": "100029",
+        "type": "int64"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurements/measurement/min",
+        "status": "unstable",
+        "sid": "100030",
+        "type": "int64"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurements/measurement/precision",
+        "status": "unstable",
+        "sid": "100031",
+        "type": "uint8"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurements/measurement/sample-count",
+        "status": "unstable",
+        "sid": "100032",
+        "type": "uint64"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurements/measurement/stdev",
+        "status": "unstable",
+        "sid": "100033",
+        "type": "uint64"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurements/measurement/type",
+        "status": "unstable",
+        "sid": "100034",
+        "type": "identityref"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurements/measurement/unit",
+        "status": "unstable",
+        "sid": "100035",
+        "type": "string"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:measurements/measurement/value",
+        "status": "unstable",
+        "sid": "100036",
+        "type": "int64"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:reset-stats",
+        "status": "unstable",
+        "sid": "100037"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:reset-stats/input",
+        "status": "unstable",
+        "sid": "100038"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:reset-stats/input/target",
+        "status": "unstable",
+        "sid": "100039"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:reset-stats/input/target/id",
+        "status": "unstable",
+        "sid": "100040",
+        "type": "uint8"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:reset-stats/input/target/type",
+        "status": "unstable",
+        "sid": "100041",
+        "type": "identityref"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:reset-stats/output",
+        "status": "unstable",
+        "sid": "100042"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:sensor-alert",
+        "status": "unstable",
+        "sid": "100043"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:sensor-alert/id",
+        "status": "unstable",
+        "sid": "100044",
+        "type": "uint8"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:sensor-alert/message",
+        "status": "unstable",
+        "sid": "100045",
+        "type": "string"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:sensor-alert/severity",
+        "status": "unstable",
+        "sid": "100046",
+        "type": {
+          "0": "warning",
+          "1": "critical"
+        }
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:sensor-alert/type",
+        "status": "unstable",
+        "sid": "100047",
+        "type": "identityref"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:state",
+        "status": "unstable",
+        "sid": "100048"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:state/east-wind-speed",
+        "status": "unstable",
+        "sid": "100049",
+        "type": "int64"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:state/north-wind-speed",
+        "status": "unstable",
+        "sid": "100050",
+        "type": "int64"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:state/uptime",
+        "status": "unstable",
+        "sid": "100051",
+        "type": "uint32"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:state/x-orientation",
+        "status": "unstable",
+        "sid": "100052",
+        "type": "int64"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/atmos-41-weather-station:state/y-orientation",
+        "status": "unstable",
+        "sid": "100053",
+        "type": "int64"
+      }
+    ],
+    "key-mapping": {
+      "100025": [
+        100034,
+        100026
+      ],
+      "100039": [
+        100041,
+        100040
+      ],
+      "100016": [
+        100022,
+        100018
+      ]
+    }
+  }
+}

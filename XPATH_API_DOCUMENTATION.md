@@ -98,6 +98,32 @@ print(entry)
 all_measurements = db["/measurements"]
 ```
 
+### Lire les clés de liste (`get_keys`)
+
+`get_keys` renvoie les prédicats de clé des entrées existantes pour un XPath de liste.
+
+```python
+filtres = db.get_keys("/measurements/measurement")
+print(filtres)
+# ["[type='solar-radiation'][id='0']", ...]
+
+# Reconstruire les chemins complets à partir des prédicats
+chemins = [f"/measurements/measurement{f}" for f in filtres]
+```
+
+Avec des prédicats en entrée, la fonction renvoie un filtre canonique unique:
+
+```python
+db.get_keys("/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']")
+# ["[type='solar-radiation'][id='0']"]
+```
+
+Pour les cles `identityref`, les noms courts sont renvoyes quand il n'y a pas
+d'ambiguite. Sinon, la forme qualifiee `module:identity` est conservee.
+
+Pour les cles `enum`, les noms symboliques sont renvoyes quand le mapping est
+disponible dans le modele SID.
+
 ### Caractéristiques
 
 - Les valeurs `identityref` sont **automatiquement converties** en noms d'identité lisibles

@@ -1,29 +1,23 @@
 import unittest
-from pathlib import Path
+import helpers
 import pycoreconf
 import json
 from yangson.exceptions import YangTypeError
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
 class TestPyCoreConf(unittest.TestCase):
-    # Helper: resolve paths
-    def resolve_path(self, p):
-        return str((PROJECT_ROOT / p).resolve()) if p is not None else None
-
     # Helper: create model from one or more SID paths (relative from project root)
     def make_ccm(self, sid_paths, desc_file=None):
-        if isinstance(sid_paths, (str, Path)):
+        if isinstance(sid_paths, str):
             sid_paths = [sid_paths]
-        sid_paths = [self.resolve_path(p) for p in sid_paths]
+        sid_paths = [helpers.resolve_filepath(p) for p in sid_paths]
         return pycoreconf.CORECONFModel(
                 sid_files=sid_paths,
-                model_description_file=self.resolve_path(desc_file)
+                model_description_file=helpers.resolve_filepath(desc_file)
         )
 
     # Helper: load a config.json file into a JSON string
     def load_config_file(self, json_filepath):
-        with open(json_filepath, 'r') as f:
+        with open(helpers.resolve_filepath(json_filepath), 'r') as f:
             config_obj = json.load(f)
         return json.dumps(config_obj)
 
@@ -45,8 +39,8 @@ class TestPyCoreConf(unittest.TestCase):
         ccm = self.make_ccm("samples/validation/example-4-a@unknown.sid",
                             desc_file="samples/validation/description.json")
         ccm.add_modules_path([
-            self.resolve_path("samples/validation/"),
-            self.resolve_path("samples/validation/ietf/")
+            helpers.resolve_filepath("samples/validation/"),
+            helpers.resolve_filepath("samples/validation/ietf/")
         ])
 
         config = { "example-4-a:bag": { "foo": 42 } }
@@ -63,8 +57,8 @@ class TestPyCoreConf(unittest.TestCase):
         ccm = self.make_ccm("samples/validation/example-4-a@unknown.sid",
                             desc_file="samples/validation/description.json")
         ccm.add_modules_path([
-            self.resolve_path("samples/validation/"),
-            self.resolve_path("samples/validation/ietf/")
+            helpers.resolve_filepath("samples/validation/"),
+            helpers.resolve_filepath("samples/validation/ietf/")
         ])
 
         # model says foo is uint8
@@ -86,8 +80,8 @@ class TestPyCoreConf(unittest.TestCase):
         ccm = self.make_ccm("samples/validation/example-4-a@unknown.sid",
                             desc_file="samples/validation/description.json")
         ccm.add_modules_path([
-            self.resolve_path("samples/validation/"),
-            self.resolve_path("samples/validation/ietf/")
+            helpers.resolve_filepath("samples/validation/"),
+            helpers.resolve_filepath("samples/validation/ietf/")
         ])
 
         # model says foo is uint8
