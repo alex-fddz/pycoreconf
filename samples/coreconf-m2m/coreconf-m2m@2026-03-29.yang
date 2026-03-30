@@ -1,0 +1,593 @@
+module coreconf-m2m {
+  yang-version 1.1;
+  namespace "urn:ietf:params:xml:ns:yang:coreconf-m2m";
+  prefix m2m;
+
+  import ietf-geo-location {
+    prefix geo;
+    reference "RFC 9179";
+  }
+
+  organization "METER Group, Inc.";
+  contact
+    "Technical Support
+     https://www.metergroup.com/";
+
+  description
+    "YANG data model for a generic M2M CoMI weather station.
+     This model defines the operational state data for sensor readings.";
+
+  revision 2026-03-29 {
+    description
+      "Move container statistics inside container quantity.";
+  }
+
+  revision 2026-03-25 {
+    description
+      "Add dampening leaf to sensor-alert notification parameters.";
+  }
+
+  revision 2026-03-23 {
+    description
+      "Make active leaf config false (reflects observe subscription state).
+       Add must constraint t-min < t-max on sensor-alert.
+       Add timestamp-source enum in quantity to indicate timestamp origin
+       (source = timestamped by the sensor, receiver = timestamped on receipt).";
+  }
+
+  revision 2026-03-22 {
+    description
+      "Rename branch measurement to transducer
+       (container, list, identity, notification).";
+  }
+
+  revision 2026-03-08 {
+    description
+      "Module renamed to coreconf-m2m for generic M2M CoMI use.";
+  }
+
+  revision 2026-03-02 {
+    description
+      "Major update for CoMI compliance:
+       - Added multi-sensor support (id key).
+       - Measurements are now configurable (writable).
+       - Added standard deviation (stdev).
+       - Added uptime to state.
+       - Removed tilt from fixed state (now a measurement type).
+       - Removed legacy RPCs (subscribe, get-stats) in favor of CoMI/Observe.
+       - Cleaned up measurement lists and notifications.";
+  }
+
+  revision 2026-02-27 {
+    description
+      "Initial revision for testing.";
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Measurement-type identity hierarchy                                  */
+  /* ------------------------------------------------------------------ */
+
+  identity transducer-type {
+    description
+      "Base identity for all measurement types.";
+  }
+
+  /* --- Environmental --- */
+
+  identity solar-radiation {
+    base transducer-type;
+    description "Solar radiation measurement (W/m2).";
+  }
+
+  identity precipitation {
+    base transducer-type;
+    description "Precipitation measurement (mm).";
+  }
+
+  identity air-temperature {
+    base transducer-type;
+    description "Air temperature measurement (°C).";
+  }
+
+  identity relative-humidity {
+    base transducer-type;
+    description "Relative humidity measurement (%).";
+  }
+
+  identity barometric-pressure {
+    base transducer-type;
+    description "Barometric pressure measurement (kPa).";
+  }
+
+  identity vapor-pressure {
+    base transducer-type;
+    description "Vapor pressure measurement (kPa).";
+  }
+
+  /* --- Wind --- */
+
+  identity wind-speed {
+    base transducer-type;
+    description "Horizontal wind speed measurement (m/s).";
+  }
+
+  identity wind-direction {
+    base transducer-type;
+    description "Wind direction measurement (degrees).";
+  }
+
+  identity wind-gust {
+    base transducer-type;
+    description "Wind gust measurement (m/s).";
+  }
+
+  /* --- Lightning --- */
+
+  identity strike-count {
+    base transducer-type;
+    description "Lightning strike count.";
+  }
+
+  identity average-distance {
+    base transducer-type;
+    description "Average lightning distance (km).";
+  }
+
+  /* --- Orientation --- */
+
+  identity tilt {
+    base transducer-type;
+    description "Sensor tilt measurement (degrees).";
+  }
+
+  /* --- Orientation (accelerometer) --- */
+
+  identity x-orientation {
+    base transducer-type;
+    description "X-axis orientation (raw accelerometer data).";
+  }
+
+  identity y-orientation {
+    base transducer-type;
+    description "Y-axis orientation (raw accelerometer data).";
+  }
+
+  /* --- Wind components --- */
+
+  identity north-wind-speed {
+    base transducer-type;
+    description "North wind speed component (m/s).";
+  }
+
+  identity east-wind-speed {
+    base transducer-type;
+    description "East wind speed component (m/s).";
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Typedefs                                                             */
+  /* ------------------------------------------------------------------ */
+
+  typedef encoding-type {
+    type enumeration {
+      enum direct {
+        value 0;
+        description "Value is encoded directly as an integer.";
+      }
+      enum delta {
+        value 1;
+        description "Value is encoded as a delta from the previous value.";
+      }
+    }
+    description "Encoding used for the measurement values.";
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Shared grouping used by notifications                                */
+  /* ------------------------------------------------------------------ */
+
+  grouping transducers-list {
+    list time-series {
+      key "type id";
+      description
+        "List of measurements included in this notification.";
+
+      leaf type {
+        type identityref {
+          base transducer-type;
+        }
+        description "The type of measurement (e.g., air-temperature).";
+      }
+
+      leaf id {
+        type uint8;
+        description
+          "Instance identifier for this measurement type.
+           Allows multiple sensors of the same type.
+           Default is 0.";
+      }
+
+      leaf-list values {
+        type int64;
+        ordered-by user;
+        description
+          "List of encoded measurement values.";
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* State data                                                           */
+  /* ------------------------------------------------------------------ */
+
+  container state {
+    config false;
+    description
+      "Operational state data of the weather station.";
+
+    leaf uptime {
+      type uint64;
+      units "seconds";
+      description "Time elapsed since the last boot.";
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Device Characteristics                                               */
+  /* ------------------------------------------------------------------ */
+
+  container characteristics {
+    description
+      "Static descriptive information about the device.";
+
+    leaf name {
+      type string;
+      description "Human-readable name of the device.";
+    }
+
+    leaf version {
+      type string;
+      description "Firmware or software version of the device.";
+    }
+
+    leaf identifier {
+      type string;
+      description "Unique identifier of the device (e.g., serial number or EUI).";
+    }
+
+    /*
+     * Physical location of the station (RFC 9179).
+     *
+     * Default geodetic datum is wgs-84 (GPS).
+     * Latitude and longitude are in decimal degrees (decimal64).
+     * Height is in meters.
+     *
+     * Example CORECONF GET to read position:
+     *   GET </c/SID_geo-location>
+     */
+    uses geo:geo-location {
+      description
+        "Fixed geographic position of the weather station.
+         Populated once at deployment; not expected to change
+         during normal operation.";
+      refine "geo-location/reference-frame/geodetic-system/geodetic-datum" {
+        default "wgs-84";
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Measurements Configuration & Data                                    */
+  /* ------------------------------------------------------------------ */
+
+  container transducers {
+    // config true (default);
+    description
+      "Current measurement values accessible via polling or configuration.";
+
+    list transducer {
+      key "type id";
+      description
+        "List of available measurements.";
+
+      leaf type {
+        type identityref {
+          base transducer-type;
+        }
+        description "The type of measurement.";
+      }
+
+      leaf id {
+        type uint8;
+        description
+          "Instance identifier to distinguish multiple sensors of the same type.";
+      }
+
+      leaf unit {
+        type string;
+        description "Unit of measurement (e.g., 'C', 'm/s', '%').";
+      }
+
+      leaf precision {
+        type uint8;
+        default 1;
+        description
+          "Number of decimal places for the measurement value.
+           Real value = raw_value * 10^-precision.
+           This precision applies to the current measurement value (polling/iPATCH),
+           not to the time-series encoding in notifications.";
+      }
+
+      container quantity {
+        config false;
+        description "Operational state for this transducer.";
+
+        leaf value {
+          type int64;
+          description
+            "The current raw integer value of the transducer.";
+        }
+
+        leaf timestamp {
+          type uint64;
+          units "seconds";
+          description "Epoch timestamp (seconds) of the last transducer update.";
+        }
+
+        leaf u-timestamp {
+          type uint32;
+          units "microseconds";
+          description
+            "Microsecond fraction of the timestamp (0..999999).";
+        }
+
+        leaf timestamp-source {
+          type enumeration {
+            enum source {
+              value 0;
+              description
+                "The timestamp was generated by the sensor itself.";
+            }
+            enum receiver {
+              value 1;
+              description
+                "The timestamp was applied by the receiver upon message arrival.";
+            }
+          }
+          description
+            "Indicates the origin of the timestamp associated with this measurement.";
+        }
+
+        container statistics {
+          config false;
+          description "Read-only accumulated statistics for this measurement.";
+
+          leaf min {
+            type int64;
+            description "Minimum value observed since last reset.";
+          }
+
+          leaf max {
+            type int64;
+            description "Maximum value observed since last reset.";
+          }
+
+          leaf mean {
+            type int64;
+            description "Mean value observed since last reset.";
+          }
+
+          leaf median {
+            type int64;
+            description
+              "Estimated median value observed since last reset.
+               This median is computed incrementally from the current stored
+               statistics and the newest sample, without keeping full history.";
+          }
+
+          leaf stdev {
+            type uint64;
+            description
+              "Standard deviation of values observed since last reset.
+               Scaled by same precision as value.";
+          }
+
+          leaf sample-count {
+            type uint64;
+            description "Number of samples used for statistics calculation.";
+          }
+        }
+      }
+
+      container notification-parameters {
+        description
+          "Configuration parameters controlling how this transducer
+           is reported in CoMI notification streams.";
+
+        container history {
+          description "Parameters for the history time-series stream.";
+
+          leaf active {
+            type boolean;
+            config false;
+            description
+              "Read-only. True when a FETCH+Observe subscription is active on /s
+               for this transducer history stream. False when no observer is registered.";
+          }
+
+          leaf step {
+            type uint32;
+            units "milliseconds";
+            description "Time interval between samples in the notification stream.";
+          }
+
+          leaf precision {
+            type uint8;
+            default 1;
+            description
+              "Number of decimal places for values encoded in time-series notifications.
+               Real value = raw_value * 10^-precision.";
+          }
+
+          leaf max-samples {
+            type uint32;
+            description "Maximum number of samples kept in the time-series buffer.";
+          }
+
+          leaf time-period {
+            type uint32;
+            units "seconds";
+            description "Duration of the time window covered by the history buffer.";
+          }
+
+          leaf encoding {
+            type encoding-type;
+            default "delta";
+            description "Encoding used for the values list in notifications.";
+          }
+
+          leaf max-payload {
+            type uint32;
+            units "bytes";
+            description
+              "Maximum size in bytes of the encoded time-series payload in
+               a single history notification.  When the encoded buffer would
+               exceed this limit, the notification is sent early (before
+               max-samples or time-period is reached).  0 means no size limit.";
+          }
+        }
+
+        container sensor-alert {
+          description "Parameters for threshold-based sensor-alert notifications.";
+
+          must "not(t-min and t-max) or t-min < t-max" {
+            error-message "t-min must be strictly less than t-max.";
+          }
+
+          leaf active {
+            type boolean;
+            config false;
+            description
+              "Read-only. True when a FETCH+Observe subscription is active on /s
+               for this transducer sensor-alert stream. False when no observer is registered.";
+          }
+
+          leaf t-min {
+            type int32;
+            description
+              "Minimum threshold value. A sensor-alert is raised when the
+               transducer value falls below this value.";
+          }
+
+          leaf t-max {
+            type int32;
+            description
+              "Maximum threshold value. A sensor-alert is raised when the
+               transducer value exceeds this value.";
+          }
+
+          leaf hysteresis {
+            type uint8 {
+              range "0..100";
+            }
+            default 5;
+            units "percent";
+            description
+              "Hysteresis applied to threshold crossings, expressed as a
+               percentage of the threshold value.";
+          }
+
+          leaf dampening {
+            type uint32;
+            default 0;
+            units "milliseconds";
+            description
+              "Minimum time that must elapse between two consecutive sensor-alert
+               notifications for the same transducer.  A new alert is suppressed
+               until the dampening period has expired since the last sent alert.
+               0 (default) means no dampening.";
+          }
+        }
+      }
+
+      action reset-stats {
+        description
+          "Reset the accumulated statistics (min, max, mean, median, stdev)
+           for this measurement. Counters restart from the next sample received.";
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* RPCs                                                                 */
+  /* ------------------------------------------------------------------ */
+
+  rpc reset-stats {
+    description
+      "Reset the accumulated statistics for all measurements.
+       The counters restart from the next sample received after the call.";
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Notifications                                                        */
+  /* ------------------------------------------------------------------ */
+
+  notification history {
+    description
+      "Measurement event sent to observers of the notification stream.
+       To receive this, a CoLA/CoMI client must Observe the stream resource.";
+
+    leaf last {
+      type boolean;
+      default "false";
+      description "True if this is the last notification for the current series.";
+    }
+
+    uses transducers-list {
+      augment "time-series" {
+        container internal {
+          description "Internal operational state for this time-series entry.";
+          leaf last-update {
+            type uint64;
+            units "seconds";
+            description "Epoch timestamp of the last sample appended to this time-series.";
+          }
+          leaf start-time {
+            type uint64;
+            units "seconds";
+            description "Epoch timestamp of the first sample; set when the Observe subscription is created.";
+          }
+          leaf messages-sent {
+            type uint64;
+            description "Number of notification messages sent for this time-series since the Observe subscription was created.";
+          }
+        }
+      }
+    }
+  }
+
+  notification sensor-alert {
+    description
+      "Alert notification when a value exceeds a threshold.";
+
+    list target {
+      key "type id";
+      description "Measurement instances that triggered this alert.";
+
+      leaf type {
+        type identityref {
+          base transducer-type;
+        }
+      }
+
+      leaf id {
+        type uint8;
+      }
+
+      leaf value {
+        type int64;
+        description "The measurement value that triggered this alert.";
+      }
+    }
+  }
+}
