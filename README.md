@@ -45,21 +45,22 @@ pip uninstall pycoreconf
 - [ltn22/pyang](https://github.com/ltn22/pyang/) module. Allows the generation of the model's SID file including leaves' data types. Provides YANG IETF modules necessary for config validation.
 - SID file generated as follows (see `tools/gen_sid.sh`):
 
-```
-pyang --sid-generate-file $ENTRY:$SIZE --sid-list --sid-extension $YANG [-p $MODULES]
-```
+    ```
+    pyang --sid-generate-file $ENTRY:$SIZE --sid-list --sid-extension $YANG [-p $MODULES]
+    ```
 
-Where:
-- `$ENTRY`: Entry point of allocated YANG SID Range.
-- `$SIZE`: Size of allocated YANG SID Range.
-- `$YANG`: Path to the .yang data model file.
-- `$MODULES`: (Optional) Path to directories containing dependent YANG modules. Include with -p if your model requires additional modules.
+    Where:
+    - `$ENTRY`: Entry point of allocated YANG SID Range.
+    - `$SIZE`: Size of allocated YANG SID Range.
+    - `$YANG`: Path to the .yang data model file.
+    - `$MODULES`: (Optional) Path to directories containing dependent YANG modules. Include with -p if your model requires additional modules.
 
-> *Note*: The range of 60,000 to 99,999 (size 40,000) is reserved for experimental YANG modules. The size of the SID range allocated for a YANG module is recommended to be a multiple of 50 and to be at least 33% above the current number of YANG items.
+    > *Note*: The range of 60,000 to 99,999 (size 40,000) is reserved for experimental YANG modules. The size of the SID range allocated for a YANG module is recommended to be a multiple of 50 and to be at least 33% above the current number of YANG items.
 
 - A YANG data model description JSON file (see `samples/validation/description.json`).
 - Dependencies:
     - `cbor2`
+    - `yangson`
 
 ## API and Usage
 
@@ -159,11 +160,11 @@ Returns a JSON string representation of the data.
 
 ### `ccm.validateConfig(config_data)`
 
+Validates input configuration data according to the YANG data model(s). A model description file must be provided. Runs automatically during encoding/decoding.
+
 - `config_data`: Python dictionary holding configuration data.
 
-Returns `True` if input config data is valid according to the YANG data model. Returns `False` if the model's description file is not specified (unable to validate).
-
-Config data is automatically validated during CORECONF/CBOR decoding.
+Returns `True` if data is valid. Raises on invalid data, or returns `False` if model description file was not provided.
 
 ### `ccm.lookupSID(config_pydict)`
 
@@ -182,3 +183,7 @@ Returns a python dictionary with SID delta keys substituted by their correspondi
 ```
 python3 -m unittest discover -s tests/
 ```
+
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md).
