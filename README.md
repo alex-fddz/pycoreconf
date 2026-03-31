@@ -135,7 +135,7 @@ ds["/measurements/measurement[type='humidity'][id='1']/value"] = 80
 del ds["/measurements/measurement[type='temp'][id='0']"]
 ```
 
-### `ds.get_keys(path)`
+### `ds.predicates(path)`
 
 Retrieve list entry key predicates for a given list path.
 

@@ -189,7 +189,7 @@ def main():
     print("[+] Datastore loaded")
 
     # Test retrieving list keys for all transducer entries
-    print("\n[*] Testing ds['/transducers/transducer'] to list keys...")
+    print("\n[*] Testing ds['/transducers/transducer'] to get full list of keys...")
     try:
         transducer_keys = ds["/transducers/transducer"]
         print(f"[+] Found {len(transducer_keys)} key set(s)")
@@ -408,6 +408,45 @@ def main():
     except Exception as e:
         print(f"[-] Error deleting entry: {e}")
         print(f"[-] Type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
+
+    # Test incrementing all sample-counts via predicates()
+    print("\n" + "=" * 70)
+    print("Testing predicates() — increment all sample-counts by 1")
+    print("=" * 70)
+    try:
+        for pred in ds.predicates("/transducers/transducer"):
+            xpath_sc = f"/transducers/transducer{pred}/quantity/statistics/sample-count"
+            ds[xpath_sc] += 1
+            print(f"[+] {pred} → sample-count = {ds[xpath_sc]}")
+        print("[+] SUCCESS: all sample-counts incremented")
+    except Exception as e:
+        print(f"[-] Error: {e}")
+        import traceback
+        traceback.print_exc()
+
+    # Test _resolve_path and its inverse _create_xpath
+    print("\n" + "=" * 70)
+    print("Testing _resolve_path() and _create_xpath() (round-trip)")
+    print("=" * 70)
+    try:
+        xpath_in = "/transducers/transducer[type='coreconf-m2m:solar-radiation'][id='0']/quantity/statistics/sample-count"
+        print(f"[*] Input XPath : {xpath_in}")
+
+        target_sid, keys = ds._resolve_path(xpath_in)
+        print(f"[+] _resolve_path → sid={target_sid}, keys={keys}")
+
+        xpath_out = ccm._create_xpath(target_sid, keys=keys)
+        print(f"[+] _create_xpath → {xpath_out}")
+
+        if xpath_in == xpath_out:
+            print("[+] SUCCESS: round-trip XPath matches!")
+        else:
+            print(f"[!] Differs — in : {xpath_in}")
+            print(f"[!]           out: {xpath_out}")
+    except Exception as e:
+        print(f"[-] Error: {e}")
         import traceback
         traceback.print_exc()
 

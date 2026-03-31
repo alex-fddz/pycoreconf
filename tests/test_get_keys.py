@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unit tests for CORECONFDatastore.get_keys()."""
+"""Unit tests for CORECONFDatastore.predicates()."""
 
 import unittest
 import helpers
@@ -25,7 +25,7 @@ class _DummyEnumKeyModel:
         }
 
     def findSID(self, *_args, **_kwargs):
-        raise AssertionError("findSID should not be called for get_keys() with predicates")
+        raise AssertionError("findSID should not be called for predicates() with predicates")
 
 
 class TestGetKeys(unittest.TestCase):
@@ -37,11 +37,11 @@ class TestGetKeys(unittest.TestCase):
         self.assertEqual(keys, [1, 7])
 
         self.assertEqual(
-            ds.get_keys("/root/list[mode='delta'][id='7']"),
+            ds.predicates("/root/list[mode='delta'][id='7']"),
             ["[mode='delta'][id='7']"],
         )
 
-    def test_get_keys_on_measurement_list(self):
+    def test_predicates_on_measurement_list(self):
         sid_path = helpers.resolve_filepath("samples/terraforma/atmos-41-weather-station@2026-03-02.sid")
 
         model = pycoreconf.CORECONFModel(sid_path)
@@ -50,7 +50,7 @@ class TestGetKeys(unittest.TestCase):
         ds["/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']"] = {}
         ds["/measurements/measurement[type='atmos-41-weather-station:wind-speed'][id='1']"] = {}
 
-        keys = ds.get_keys("/measurements/measurement")
+        keys = ds.predicates("/measurements/measurement")
 
         self.assertIsInstance(keys, list)
 
@@ -60,13 +60,13 @@ class TestGetKeys(unittest.TestCase):
         ]
         self.assertCountEqual(keys, expected)
 
-    def test_get_keys_with_predicates(self):
+    def test_predicates_with_predicates(self):
         sid_path = helpers.resolve_filepath("samples/terraforma/atmos-41-weather-station@2026-03-02.sid")
 
         model = pycoreconf.CORECONFModel(sid_path)
         ds = model.create_datastore()
 
-        keys = ds.get_keys(
+        keys = ds.predicates(
             "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='2']"
         )
 
@@ -83,11 +83,12 @@ class TestGetKeys(unittest.TestCase):
 
         ds["/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/sample-count"] = 123
 
-        filters = ds.get_keys("/measurements/measurement")
+        filters = ds.predicates("/measurements/measurement")
         self.assertIn("[type='solar-radiation'][id='0']", filters)
 
         path = "/measurements/measurement[type='solar-radiation'][id='0']/sample-count"
         self.assertEqual(ds[path], 123)
+
 
 
 if __name__ == "__main__":

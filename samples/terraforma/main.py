@@ -188,9 +188,9 @@ def main():
     print("[+] Datastore loaded")
 
     # Test retrieving list keys for all measurement entries
-    print("\n[*] Testing get_keys() on /measurements/measurement...")
+    print("\n[*] Testing predicates() on /measurements/measurement...")
     try:
-        measurement_keys = ds.get_keys("/measurements/measurement")
+        measurement_keys = ds.predicates("/measurements/measurement")
         print(f"[+] Found {len(measurement_keys)} key set(s)")
         pprint.pprint(measurement_keys, width=200)
     except Exception as e:

@@ -502,12 +502,12 @@ class CORECONFDatastore:
             self.data = cbor.loads(cbor_data)
             return
         
-    def get_keys(self, xpath):
+    def predicates(self, xpath):
         """
         Return list-key predicates for entries under a list XPath.
 
         Example:
-            ds.get_keys("/measurements/measurement")
+            ds.predicates("/measurements/measurement")
             -> ["[type='module:identity'][id='0']", ...]
 
         If XPath includes predicates, returns the corresponding predicate string
@@ -542,7 +542,7 @@ class CORECONFDatastore:
         if keys:
             return [_format_predicates_from_values(keys)]
 
-        child = self.model.findSID(self.data, sid=target_sid, keys=[], no_keys=True)
+        child = self.model.findSID(self.data, sid=target_sid, keys=[])
         if child is None:
             return []
 

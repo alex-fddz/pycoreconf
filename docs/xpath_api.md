@@ -98,12 +98,12 @@ print(entry)
 all_measurements = ds["/measurements"]
 ```
 
-### Read List Keys (`get_keys`)
+### Read List Keys (`predicates`)
 
-`get_keys` returns list-entry key predicates for a list XPath.
+`predicates` returns list-entry key predicates for a list XPath.
 
 ```python
-filters = ds.get_keys("/measurements/measurement")
+filters = ds.predicates("/measurements/measurement")
 print(filters)
 # ["[type='solar-radiation'][id='0']", ...]
 
@@ -114,7 +114,7 @@ entry_paths = [f"/measurements/measurement{f}" for f in filters]
 With predicates in input, the function returns a single canonical filter string:
 
 ```python
-ds.get_keys("/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']")
+ds.predicates("/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']")
 # ["[type='solar-radiation'][id='0']"]
 ```
 
