@@ -280,7 +280,7 @@ class CORECONFModel(ModelSID):
         # Unwrap the ValueClass objects before returning
         return(unwrapValues(obj))
 
-    def findSID(self, obj, sid=None, keys=None, value=None, delta=0, path='/', depth=None, no_keys=False):
+    def findSID(self, obj, sid=None, keys=None, value=None, delta=0, path='/', depth=None):
         """
         Recursive SID lookup/setter that preserves the tree structure.
         Returns {sid: value} when found, otherwise None.
@@ -327,7 +327,7 @@ class CORECONFModel(ModelSID):
                         # child_object is directly a list of dictionaries
                         if type(child_object) is list:
                             # Target IS the list node itself — return all entries if no_keys
-                            if no_keys and sid is not None and sid == p_sid:
+                            if not keys and sid is not None and sid == p_sid:
                                 return {p_sid: [_trim(e, depth) for e in child_object]}
 
                             if len(key_sids) > len(remaining_keys):
