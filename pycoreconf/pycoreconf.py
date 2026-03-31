@@ -80,9 +80,19 @@ class CORECONFModel(ModelSID):
                 return str(obj)
             elif dtype in ["int8", "int16", "int32", "int64",
                             "uint8", "uint16", "uint32", "uint64"]:
-                return int(obj)
-            elif dtype == "decimal64":  # untested
-                return float(obj)
+                # RFC 7951: int64/uint64 must be strings in JSON to avoid precision loss,
+                # but CBOR uses native integers. Smaller types are safe as JSON numbers.
+                if not encoding and dtype in ["int64", "uint64"]:
+                    return str(obj)
+                else:
+                    return int(obj)
+            elif dtype == "decimal64":
+                # RFC 7951: decimal64 must be a string in JSON to avoid precision loss,
+                # but CBOR can use a float or string representation
+                if not encoding:
+                    return str(obj)
+                else:
+                    return float(obj)
             elif dtype == "binary":
                 if encoding: 
                     dec = base64.b64decode(obj)
