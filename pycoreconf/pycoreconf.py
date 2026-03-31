@@ -118,9 +118,17 @@ class CORECONFModel(ModelSID):
             if encoding: # inverse dict, w value as int
                 dtype = {v: int(k) for k, v in dtype.items()}
             return dtype[str(obj)]
-        elif type(dtype) is list: # union 
+        elif type(dtype) is list: # union
             # print("[-] Union: Returning as is.")
             return obj
+
+        # RFC 7951: Fallback for Decimal objects (e.g., from unrecognized typedefs)
+        # Decimal values must be strings in JSON to maintain precision
+        if not encoding:
+            from decimal import Decimal
+            if isinstance(obj, Decimal):
+                return str(obj)
+
         return obj
 
     def lookupSID(self, obj, path="/", parent=0):
