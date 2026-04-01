@@ -87,7 +87,7 @@ class TestGetKeys(unittest.TestCase):
         self.assertIn("[type='solar-radiation'][id='0']", filters)
 
         path = "/measurements/measurement[type='solar-radiation'][id='0']/sample-count"
-        self.assertEqual(ds[path], 123)
+        self.assertEqual(int(ds[path]), 123) # the data model says type is uint64, so it's encoded as a string (RFC 7951)
 
 
 if __name__ == "__main__":
