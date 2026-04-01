@@ -80,9 +80,19 @@ class CORECONFModel(ModelSID):
                 return str(obj)
             elif dtype in ["int8", "int16", "int32", "int64",
                             "uint8", "uint16", "uint32", "uint64"]:
-                return int(obj)
-            elif dtype == "decimal64":  # untested
-                return float(obj)
+                # RFC 7951: int64/uint64 must be strings in JSON to avoid precision loss,
+                # but CBOR uses native integers. Smaller types are safe as JSON numbers.
+                if not encoding and dtype in ["int64", "uint64"]:
+                    return str(obj)
+                else:
+                    return int(obj)
+            elif dtype == "decimal64":
+                # RFC 7951: decimal64 must be a string in JSON to avoid precision loss,
+                # but CBOR can use a float or string representation
+                if not encoding:
+                    return str(obj)
+                else:
+                    return float(obj)
             elif dtype == "binary":
                 if encoding: 
                     dec = base64.b64decode(obj)
@@ -108,9 +118,17 @@ class CORECONFModel(ModelSID):
             if encoding: # inverse dict, w value as int
                 dtype = {v: int(k) for k, v in dtype.items()}
             return dtype[str(obj)]
-        elif type(dtype) is list: # union 
+        elif type(dtype) is list: # union
             # print("[-] Union: Returning as is.")
             return obj
+
+        # RFC 7951: Fallback for Decimal objects (e.g., from unrecognized typedefs)
+        # Decimal values must be strings in JSON to maintain precision
+        if not encoding:
+            from decimal import Decimal
+            if isinstance(obj, Decimal):
+                return str(obj)
+
         return obj
 
     def lookupSID(self, obj, path="/", parent=0):
