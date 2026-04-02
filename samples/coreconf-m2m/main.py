@@ -330,11 +330,11 @@ def main():
     # Test creating a new list entry by setting a single leaf
     print("\n[*] Creating new list entry with single leaf assignment...")
     try:
-        new_xpath = "/transducers/transducer[type='coreconf-m2m:solar-radiation'][id='1']/precision"
+        new_xpath = "/transducers/transducer[type='coreconf-m2m:solar-radiation'][id='1']"
         print(f"[*] Path to create: {new_xpath}")
 
         # Try to assign precision=3 to a non-existent entry
-        ds[new_xpath] = 3
+        ds[new_xpath] = {'precision': 3}  # Should create the entry with just the precision leaf
         print(f"[+] Assigned precision=3 to new entry")
 
         # Verify the assignment
@@ -431,7 +431,7 @@ def main():
     print("Testing _resolve_path() and _create_xpath() (round-trip)")
     print("=" * 70)
     try:
-        xpath_in = "/transducers/transducer[type='coreconf-m2m:solar-radiation'][id='0']/quantity/statistics/sample-count"
+        xpath_in = "/transducers/transducer[id='0'][type='coreconf-m2m:solar-radiation']/quantity/statistics/sample-count"
         print(f"[*] Input XPath : {xpath_in}")
 
         target_sid, keys = ds._resolve_path(xpath_in)

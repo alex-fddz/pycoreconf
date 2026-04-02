@@ -18,13 +18,72 @@ class CORECONFDatastore:
     def __init__(self, model: "CORECONFModel", cbor_data: bytes = None):
         """
         Initialize datastore from CORECONF model and CBOR data.
-        
+
         Args:
             model: CORECONFModel instance
             cbor_data: CBOR-encoded data (bytes)
         """
         self.model = model
         self.data = cbor.loads(cbor_data) if isinstance(cbor_data, bytes) else cbor_data
+
+        # Normalize: wrap absolute SID keys into their ancestor chain using delta encoding.
+        # A device may respond with {100063: [...]} (absolute SID of a nested node),
+        # but the datastore expects a rooted delta tree, e.g. {100062: {1: [...]}}.
+        if isinstance(self.data, dict):
+            self.data = self._normalize_absolute_sids(self.data)
+
+    def _normalize_absolute_sids(self, flat_data):
+        """
+        Convert a flat {absolute_sid: value} dict into a properly nested
+        delta-encoded CORECONF tree.
+
+        Example: {100063: [{1: id_val, 33: type_val}]}
+              -> {100062: {1: [{1: id_val, 33: type_val}]}}
+        where 100062 = transducers, delta 1 = transducer (100063 - 100062).
+        """
+        def deep_merge(base, overlay):
+            if not isinstance(base, dict) or not isinstance(overlay, dict):
+                return overlay
+            merged = dict(base)
+            for k, v in overlay.items():
+                merged[k] = deep_merge(merged[k], v) if k in merged else v
+            return merged
+
+        result = {}
+        for key, value in flat_data.items():
+            if not isinstance(key, int):
+                result[key] = value
+                continue
+
+            path = self.model.ids.get(key)
+            if not path:
+                result[key] = value
+                continue
+
+            parts = path.lstrip('/').split('/')
+            if len(parts) <= 1:
+                # Already a root-level node; key is absolute (delta from 0).
+                result[key] = value
+                continue
+
+            # Walk up the ancestor chain, wrapping with delta keys.
+            current_sid = key
+            current_val = value
+            while True:
+                p = self.model.ids.get(current_sid, '')
+                p_parts = p.lstrip('/').split('/')
+                if len(p_parts) <= 1:
+                    break
+                parent_path = '/' + '/'.join(p_parts[:-1])
+                parent_sid = self.model.sids.get(parent_path)
+                if parent_sid is None:
+                    break
+                current_val = {current_sid - parent_sid: current_val}
+                current_sid = parent_sid
+
+            result[current_sid] = deep_merge(result[current_sid], current_val) if current_sid in result else current_val
+
+        return result
     
     def _parse_xpath(self, xpath):
         """
