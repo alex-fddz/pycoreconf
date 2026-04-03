@@ -41,16 +41,16 @@ class TestGetKeys(unittest.TestCase):
             ["[mode='delta'][id='7']"],
         )
 
-    def test_predicates_on_measurement_list(self):
-        sid_path = helpers.resolve_filepath("samples/terraforma/atmos-41-weather-station@2026-03-02.sid")
+    def test_predicates_on_transducer_list(self):
+        sid_path = helpers.resolve_filepath("samples/datastore/coreconf-m2m@2026-03-29.sid")
 
         model = pycoreconf.CORECONFModel(sid_path)
         ds = model.create_datastore()
 
-        ds["/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']"] = {}
-        ds["/measurements/measurement[type='atmos-41-weather-station:wind-speed'][id='1']"] = {}
+        ds["/transducers/transducer[type='coreconf-m2m:solar-radiation'][id='0']"] = {}
+        ds["/transducers/transducer[type='coreconf-m2m:wind-speed'][id='1']"] = {}
 
-        keys = ds.predicates("/measurements/measurement")
+        keys = ds.predicates("/transducers/transducer")
 
         self.assertIsInstance(keys, list)
 
@@ -61,13 +61,13 @@ class TestGetKeys(unittest.TestCase):
         self.assertCountEqual(keys, expected)
 
     def test_predicates_with_predicates(self):
-        sid_path = helpers.resolve_filepath("samples/terraforma/atmos-41-weather-station@2026-03-02.sid")
+        sid_path = helpers.resolve_filepath("samples/datastore/coreconf-m2m@2026-03-29.sid")
 
         model = pycoreconf.CORECONFModel(sid_path)
         ds = model.create_datastore()
 
         keys = ds.predicates(
-            "/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='2']"
+            "/transducers/transducer[type='coreconf-m2m:solar-radiation'][id='2']"
         )
 
         self.assertEqual(
@@ -76,17 +76,17 @@ class TestGetKeys(unittest.TestCase):
         )
 
     def test_compact_identity_filter_is_reusable(self):
-        sid_path = helpers.resolve_filepath("samples/terraforma/atmos-41-weather-station@2026-03-02.sid")
+        sid_path = helpers.resolve_filepath("samples/datastore/coreconf-m2m@2026-03-29.sid")
 
         model = pycoreconf.CORECONFModel(sid_path)
         ds = model.create_datastore()
 
-        ds["/measurements/measurement[type='atmos-41-weather-station:solar-radiation'][id='0']/sample-count"] = 123
+        ds["/transducers/transducer[type='coreconf-m2m:solar-radiation'][id='0']/quantity/statistics/sample-count"] = 123
 
-        filters = ds.predicates("/measurements/measurement")
+        filters = ds.predicates("/transducers/transducer")
         self.assertIn("[type='solar-radiation'][id='0']", filters)
 
-        path = "/measurements/measurement[type='solar-radiation'][id='0']/sample-count"
+        path = "/transducers/transducer[type='solar-radiation'][id='0']/quantity/statistics/sample-count"
         self.assertEqual(int(ds[path]), 123) # the data model says type is uint64, so it's encoded as a string (RFC 7951)
 
 
