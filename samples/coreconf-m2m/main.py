@@ -118,6 +118,8 @@ def main():
         print(f"[-] Error loading SID file: {e}")
         sys.exit(1)
 
+    input("Press Enter to continue...")
+
     # Generate full test data (all transducer types)
     print("\n[*] Generating full test data (all transducer types)...")
     config_data = generate_full_sequence_data()
@@ -135,6 +137,8 @@ def main():
     print(json.dumps(config_data, indent=2))
     print("-" * 70)
     print(f"[*] JSON size: {len(json.dumps(config_data))} characters")
+
+    input("Press Enter to continue...")
 
     # Convert to CORECONF/CBOR
     print("\n[*] Converting to CORECONF/CBOR...")
@@ -154,6 +158,8 @@ def main():
         import traceback
         traceback.print_exc()
         sys.exit(1)
+
+    input("Press Enter to continue...")
 
     # Try to decode back
     print("\n[*] Decoding CBOR back to JSON...")
@@ -178,6 +184,8 @@ def main():
         import traceback
         traceback.print_exc()
 
+    input("Press Enter to continue...")
+
     # Test new high-level datastore API
     print("\n" + "=" * 70)
     print("Testing CORECONFDatastore API (XPath-like syntax)")
@@ -199,6 +207,8 @@ def main():
         import traceback
         traceback.print_exc()
 
+    input("Press Enter to continue...")
+
     # Test accessing the list entry (without leaf)
     xpath_entry = "/transducers/transducer[type='coreconf-m2m:solar-radiation'][id='0']"
     print(f"\n[*] Reading entire list entry with XPath: {xpath_entry}")
@@ -211,6 +221,8 @@ def main():
         import traceback
         traceback.print_exc()
 
+    input("Press Enter to continue...")
+
     # Test reading sample-count (nested inside quantity/statistics)
     xpath = "/transducers/transducer[type='coreconf-m2m:solar-radiation'][id='0']/quantity/statistics/sample-count"
     print(f"\n[*] Reading value with XPath: {xpath}")
@@ -222,6 +234,8 @@ def main():
         import traceback
         traceback.print_exc()
 
+    input("Press Enter to continue...")
+
     # Test reading the current value (inside quantity)
     xpath_value = "/transducers/transducer[type='coreconf-m2m:solar-radiation'][id='0']/quantity/value"
     print(f"\n[*] Reading value with XPath: {xpath_value}")
@@ -232,6 +246,8 @@ def main():
         print(f"[-] Error reading: {e}")
         import traceback
         traceback.print_exc()
+
+    input("Press Enter to continue...")
 
     # Test reading precision (config leaf, directly on transducer)
     xpath_precision = "/transducers/transducer[type='coreconf-m2m:solar-radiation'][id='0']/precision"
@@ -246,6 +262,8 @@ def main():
             print(f"[+] Actual value: {actual_value}")
     except Exception as e:
         print(f"[-] Error reading: {e}")
+
+    input("Press Enter to continue...")
 
     # Test in-place increment operator (+=)
     print("\n[*] Testing in-place increment operator (+=)...")
@@ -269,6 +287,8 @@ def main():
         import traceback
         traceback.print_exc()
 
+    input("Press Enter to continue...")
+
     # Test that += fails on containers (non-leaf nodes)
     print("\n[*] Testing += on container (should fail)...")
     try:
@@ -279,6 +299,8 @@ def main():
         print(f"[+] Message: {e}")
     except Exception as e:
         print(f"[-] Unexpected error: {e}")
+
+    input("Press Enter to continue...")
 
     # Test writing entire list entry with YANG representation
     print("\n[*] Writing complete list entry with YANG representation...")
@@ -311,6 +333,8 @@ def main():
         import traceback
         traceback.print_exc()
 
+    input("Press Enter to continue...")
+
     # Export modified data
     print("\n[*] Exporting modified data...")
     try:
@@ -327,6 +351,8 @@ def main():
         import traceback
         traceback.print_exc()
 
+    input("Press Enter to continue...")
+
     # Test creating a new list entry by setting a single leaf
     print("\n[*] Creating new list entry with single leaf assignment...")
     try:
@@ -338,10 +364,10 @@ def main():
         print(f"[+] Assigned precision=3 to new entry")
 
         # Verify the assignment
-        verify_precision = ds[new_xpath]
-        print(f"[+] Verified precision = {verify_precision}")
+        created_entry = ds[new_xpath]
+        print(f"[+] Created entry = {created_entry}")
 
-        if verify_precision == 3:
+        if created_entry["precision"] == 3:
             print("[+] SUCCESS: New entry created with single leaf!")
 
             # Show the CBOR structure
@@ -366,6 +392,8 @@ def main():
         import traceback
         traceback.print_exc()
 
+    input("Press Enter to continue...")
+
     # Test deleting the precision field progressively
     print("\n[*] Step 1: Deleting precision field only...")
     try:
@@ -384,6 +412,8 @@ def main():
         print(f"[-] Type: {type(e).__name__}")
         import traceback
         traceback.print_exc()
+
+    input("Press Enter to continue...")
 
     # Test deleting the entire list entry
     print("\n[*] Step 2: Deleting the entire transducer node...")
@@ -411,6 +441,8 @@ def main():
         import traceback
         traceback.print_exc()
 
+    input("Press Enter to continue...")
+
     # Test incrementing all sample-counts via predicates()
     print("\n" + "=" * 70)
     print("Testing predicates() — increment all sample-counts by 1")
@@ -425,6 +457,8 @@ def main():
         print(f"[-] Error: {e}")
         import traceback
         traceback.print_exc()
+
+    input("Press Enter to continue...")
 
     # Test _resolve_path and its inverse _create_xpath
     print("\n" + "=" * 70)
@@ -441,7 +475,7 @@ def main():
         target_sid, keys = ds._resolve_path(xpath_in)
         print(f"[+] _resolve_path → sid={target_sid}, keys={keys}")
 
-        xpath_out = ccm._create_xpath(target_sid, keys=keys)
+        xpath_out = ds._create_xpath(target_sid, keys=keys)
         print(f"[+] _create_xpath → {xpath_out}")
 
         if xpath_in == xpath_out:
