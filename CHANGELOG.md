@@ -6,7 +6,7 @@
 - Datastore feature
   - Store and manipulate CORECONF configuration data
   - Use high-level abstraction with XPath-like syntax
-  - Include docs and `terraforma` sample
+  - Include docs and sample
 
 ### Changed
 - API: `sid_files` accepts both list and single string path

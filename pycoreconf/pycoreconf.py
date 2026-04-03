@@ -70,7 +70,7 @@ class CORECONFModel(ModelSID):
         else:
             raise TypeError("Can only add path string or list of paths.")
 
-    def _castDataTypes(self, obj, dtype, encoding):
+    def _castDataTypes(self, obj, dtype, encoding, native_types=True):
         """
         Cast leaf value to correct Python data type according to YANG data type.
         """
@@ -82,14 +82,14 @@ class CORECONFModel(ModelSID):
                             "uint8", "uint16", "uint32", "uint64"]:
                 # RFC 7951: int64/uint64 must be strings in JSON to avoid precision loss,
                 # but CBOR uses native integers. Smaller types are safe as JSON numbers.
-                if not encoding and dtype in ["int64", "uint64"]:
+                if not encoding and dtype in ["int64", "uint64"] and not native_types:
                     return str(obj)
                 else:
                     return int(obj)
             elif dtype == "decimal64":
                 # RFC 7951: decimal64 must be a string in JSON to avoid precision loss,
                 # but CBOR can use a float or string representation
-                if not encoding:
+                if not encoding and not native_types:
                     return str(obj)
                 else:
                     return float(obj)
@@ -124,7 +124,7 @@ class CORECONFModel(ModelSID):
 
         # RFC 7951: Fallback for Decimal objects (e.g., from unrecognized typedefs)
         # Decimal values must be strings in JSON to maintain precision
-        if not encoding:
+        if not encoding and not native_types:
             from decimal import Decimal
             if isinstance(obj, Decimal):
                 return str(obj)
@@ -229,7 +229,7 @@ class CORECONFModel(ModelSID):
 
         return cbor.dumps(cc)
 
-    def lookupIdentifier(self, obj, delta=0, path="/"):
+    def lookupIdentifier(self, obj, delta=0, path="/", native_types=True):
         """
         Look up leaf identifier for *obj* SID value. 
         Dive in if it's a dictionary or a list of elements.
@@ -241,7 +241,7 @@ class CORECONFModel(ModelSID):
                 sid = k + delta             # get full identifier path
                 identifier = self.ids[sid]       # look for SID value
 
-                value = self.lookupIdentifier(v, sid, identifier)    # dive in
+                value = self.lookupIdentifier(v, sid, identifier, native_types)    # dive in
 
                 json_key = identifier[len(path):].lstrip("/")
                 json_dict[json_key] = value
@@ -250,7 +250,7 @@ class CORECONFModel(ModelSID):
         elif type(obj) is list:
             json_list = []
             for e in obj:   # get each element of the list
-                value = self.lookupIdentifier(e, delta, path)    # dive in
+                value = self.lookupIdentifier(e, delta, path, native_types)    # dive in
                 json_list.append(value)
             return json_list
 
@@ -259,9 +259,9 @@ class CORECONFModel(ModelSID):
             # get leaf data type according to model
             # and cast to correct data type.
             dtype = self.types[path]
-            return self._castDataTypes(obj, dtype, encoding=False)
+            return self._castDataTypes(obj, dtype, encoding=False, native_types=native_types)
 
-    def lookupIdentifierWithoutRecursion(self, obj, delta=0, path='/'):
+    def lookupIdentifierWithoutRecursion(self, obj, delta=0, path='/', native_types=True):
         """
         A clone of lookupIdentifier method which uses non recursive methods to build the original JSON Object from SID represented Object
         """
@@ -293,7 +293,7 @@ class CORECONFModel(ModelSID):
             # currentValue is a leaf here, transform their datatype before adding to the currentObject
             else:
                 dtype = self.types[currentPath]
-                currentObject.value = self._castDataTypes(currentObject.value, dtype, encoding=False)
+                currentObject.value = self._castDataTypes(currentObject.value, dtype, encoding=False, native_types=native_types)
 
         # Unwrap the ValueClass objects before returning
         return(unwrapValues(obj))
@@ -405,87 +405,13 @@ class CORECONFModel(ModelSID):
 
         return _walk(obj, delta, path, keys)
 
-    def _create_xpath(self, sid, keys=None):
-        """
-        Convert a SID and optional key values to an XPath string.
-
-        This is the inverse of CORECONFDatabase._resolve_path(): given the SID
-        of a target node and the list of key values (in key_mapping order),
-        reconstruct the XPath expression with predicates.
-
-        Args:
-            sid:  integer SID of the target node
-            keys: list of key values in the same positional order as key_mapping
-                  (same format as findSIDR's *keys* argument).
-                  A flat list is expected; for nested lists the values must be
-                  in path order (outermost list first).
-
-        Returns:
-            XPath string, e.g. "/container/list[key='val']/leaf"
-
-        Raises:
-            KeyError: if *sid* is not found in the model.
-
-        Example:
-            xpath = model._create_xpath(1234, keys=['solar-radiation', '0'])
-            # → "/measurements/measurement[type='solar-radiation'][id='0']/value"
-        """
-        yang_path = self.ids.get(sid)
-        if yang_path is None:
-            raise KeyError(f"SID {sid} not found in model")
-
-        segments = [s for s in yang_path.split('/') if s]
-        xpath_parts = []
-        current_path = ""
-        key_index = 0
-        keys = keys or []
-
-        for segment in segments:
-            # Strip module prefix: "ietf-foo:container" → "container"
-            local_name = segment.split(':')[-1]
-            current_path = current_path + "/" + segment
-
-            seg_sid = self.sids.get(current_path)
-
-            # If this segment is a list node, inject key predicates
-            if seg_sid is not None and str(seg_sid) in self.key_mapping:
-                key_sids = self.key_mapping[str(seg_sid)]
-                predicates = []
-                for key_sid in key_sids:
-                    if key_index < len(keys):
-                        key_path = self.ids.get(key_sid)
-                        key_name = key_path.rstrip('/').split('/')[-1].split(':')[-1]
-                        key_val = keys[key_index]
-                        key_index += 1
-                        # Identityref: numeric SID → resolve to "module:name"
-                        key_type = self.types.get(key_path)
-                        if isinstance(key_val, int):
-                            if key_type == 'identityref':
-                                resolved = self.ids.get(key_val)
-                                if resolved:
-                                    key_val = resolved
-                            elif isinstance(key_type, dict):  # enum: {"0": "name", ...}
-                                resolved = key_type.get(str(key_val))
-                                if resolved:
-                                    key_val = resolved
-                        predicates.append(f"{key_name}='{key_val}'")
-                if predicates:
-                    xpath_parts.append(local_name + "".join(f"[{p}]" for p in predicates))
-                else:
-                    xpath_parts.append(local_name)
-            else:
-                xpath_parts.append(local_name)
-
-        return "/" + "/".join(xpath_parts)
-
-
     def toJSON(self, cbor_data, return_pydict=False): 
         """
-        Convert CORECONF (CBOR) data to JSON object (or Python dictionary).
+        Convert CORECONF (CBOR) data to JSON-formatted string (or Python dictionary with native types).
         """
 
         data = cbor.loads(cbor_data)
-        pyd = self.lookupIdentifierWithoutRecursion(data)
+        pyd = self.lookupIdentifierWithoutRecursion(data, native_types=return_pydict)
 
         # Attempt to validate the output config
         try:
@@ -498,8 +424,6 @@ class CORECONFModel(ModelSID):
         
         # Return JSON obj / pyDict
         return pyd if return_pydict else json.dumps(pyd) 
-
-
 
     def validateConfig(self, config):
         """
