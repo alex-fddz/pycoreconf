@@ -465,11 +465,7 @@ def main():
     print("Testing _resolve_path() and _create_xpath() (round-trip)")
     print("=" * 70)
     try:
-<<<<<<< HEAD
-        xpath_in = "/transducers/transducer[id='0'][type='coreconf-m2m:solar-radiation']/quantity/statistics/sample-count"
-=======
         xpath_in = "/transducers/transducer[type='coreconf-m2m:solar-radiation'][id='0']/quantity/statistics/sample-count"
->>>>>>> 752d7e7 (refactor: rename get_keys to predicates, fix no_keys removal, add tests and examples)
         print(f"[*] Input XPath : {xpath_in}")
 
         target_sid, keys = ds._resolve_path(xpath_in)
