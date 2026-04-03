@@ -18,13 +18,71 @@ class CORECONFDatastore:
     def __init__(self, model: "CORECONFModel", cbor_data: bytes = None):
         """
         Initialize datastore from CORECONF model and CBOR data.
-        
+
         Args:
             model: CORECONFModel instance
             cbor_data: CBOR-encoded data (bytes)
         """
         self.model = model
         self.data = cbor.loads(cbor_data) if isinstance(cbor_data, bytes) else cbor_data
+
+        # Normalize: wrap absolute SID keys into their ancestor chain using delta encoding.
+        # A device may respond with {100063: [...]} (absolute SID of a nested node),
+        # but the datastore expects a rooted delta tree, e.g. {100062: {1: [...]}}.
+        if isinstance(self.data, dict):
+            self.data = self._normalize_absolute_sids(self.data)
+
+    def _normalize_absolute_sids(self, flat_data):
+        """
+        Convert a flat {absolute_sid: value} dict into a properly nested
+        delta-encoded CORECONF tree.
+
+        Example: {100063: [{1: id_val, 33: type_val}]}
+              -> {100062: {1: [{1: id_val, 33: type_val}]}}
+        """
+        def deep_merge(base, overlay):
+            if not isinstance(base, dict) or not isinstance(overlay, dict):
+                return overlay
+            merged = dict(base)
+            for k, v in overlay.items():
+                merged[k] = deep_merge(merged[k], v) if k in merged else v
+            return merged
+
+        result = {}
+        for key, value in flat_data.items():
+            if not isinstance(key, int):
+                result[key] = value
+                continue
+
+            path = self.model.ids.get(key)
+            if not path:
+                result[key] = value
+                continue
+
+            parts = path.lstrip('/').split('/')
+            if len(parts) <= 1:
+                # Already a root-level node; key is absolute (delta from 0).
+                result[key] = value
+                continue
+
+            # Walk up the ancestor chain, wrapping with delta keys.
+            current_sid = key
+            current_val = value
+            while True:
+                p = self.model.ids.get(current_sid, '')
+                p_parts = p.lstrip('/').split('/')
+                if len(p_parts) <= 1:
+                    break
+                parent_path = '/' + '/'.join(p_parts[:-1])
+                parent_sid = self.model.sids.get(parent_path)
+                if parent_sid is None:
+                    break
+                current_val = {current_sid - parent_sid: current_val}
+                current_sid = parent_sid
+
+            result[current_sid] = deep_merge(result[current_sid], current_val) if current_sid in result else current_val
+
+        return result
     
     def _parse_xpath(self, xpath):
         """
@@ -281,7 +339,80 @@ class CORECONFDatastore:
         
         target_sid = self.model.sids[yang_path]
         return target_sid, key_values
-    
+
+    def _create_xpath(self, sid, keys=None):
+        """
+        Convert a SID and optional key values to an XPath string.
+
+        This is the inverse of CORECONFDatabase._resolve_path(): given the SID
+        of a target node and the list of key values (in key_mapping order),
+        reconstruct the XPath expression with predicates.
+
+        Args:
+            sid:  integer SID of the target node
+            keys: list of key values in the same positional order as key_mapping
+                  (same format as findSIDR's *keys* argument).
+                  A flat list is expected; for nested lists the values must be
+                  in path order (outermost list first).
+
+        Returns:
+            XPath string, e.g. "/container/list[key='val']/leaf"
+
+        Raises:
+            KeyError: if *sid* is not found in the model.
+
+        Example:
+            xpath = datastore._create_xpath(1234, keys=['solar-radiation', '0'])
+            # → "/measurements/measurement[type='solar-radiation'][id='0']/value"
+        """
+        yang_path = self.model.ids.get(sid)
+        if yang_path is None:
+            raise KeyError(f"SID {sid} not found in model")
+
+        segments = [s for s in yang_path.split('/') if s]
+        xpath_parts = []
+        current_path = ""
+        key_index = 0
+        keys = keys or []
+
+        for segment in segments:
+            # Strip module prefix: "ietf-foo:container" → "container"
+            local_name = segment.split(':')[-1]
+            current_path = current_path + "/" + segment
+
+            seg_sid = self.model.sids.get(current_path)
+
+            # If this segment is a list node, inject key predicates
+            if seg_sid is not None and str(seg_sid) in self.model.key_mapping:
+                key_sids = self.model.key_mapping[str(seg_sid)]
+                predicates = []
+                for key_sid in key_sids:
+                    if key_index < len(keys):
+                        key_path = self.model.ids.get(key_sid)
+                        key_name = key_path.rstrip('/').split('/')[-1].split(':')[-1]
+                        key_val = keys[key_index]
+                        key_index += 1
+                        # Identityref: numeric SID → resolve to "module:name"
+                        key_type = self.model.types.get(key_path)
+                        if isinstance(key_val, int):
+                            if key_type == 'identityref':
+                                resolved = self.model.ids.get(key_val)
+                                if resolved:
+                                    key_val = resolved
+                            elif isinstance(key_type, dict):  # enum: {"0": "name", ...}
+                                resolved = key_type.get(str(key_val))
+                                if resolved:
+                                    key_val = resolved
+                        predicates.append(f"{key_name}='{key_val}'")
+                if predicates:
+                    xpath_parts.append(local_name + "".join(f"[{p}]" for p in predicates))
+                else:
+                    xpath_parts.append(local_name)
+            else:
+                xpath_parts.append(local_name)
+
+        return "/" + "/".join(xpath_parts)
+
     def __getitem__(self, xpath):
         """
         Get value at XPath.
@@ -502,12 +633,12 @@ class CORECONFDatastore:
             self.data = cbor.loads(cbor_data)
             return
         
-    def get_keys(self, xpath):
+    def predicates(self, xpath):
         """
         Return list-key predicates for entries under a list XPath.
 
         Example:
-            ds.get_keys("/measurements/measurement")
+            ds.predicates("/measurements/measurement")
             -> ["[type='module:identity'][id='0']", ...]
 
         If XPath includes predicates, returns the corresponding predicate string
@@ -542,7 +673,7 @@ class CORECONFDatastore:
         if keys:
             return [_format_predicates_from_values(keys)]
 
-        child = self.model.findSID(self.data, sid=target_sid, keys=[], no_keys=True)
+        child = self.model.findSID(self.data, sid=target_sid, keys=[])
         if child is None:
             return []
 
