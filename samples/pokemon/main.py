@@ -3,6 +3,7 @@
 #  on a datamodel with an identityref leaf.
 
 import pycoreconf
+import json
 
 # Create the model object
 ccm = pycoreconf.CORECONFModel("pokemon@unknown.sid")
@@ -11,7 +12,7 @@ ccm = pycoreconf.CORECONFModel("pokemon@unknown.sid")
 config_file = "card.json"
 
 with open(config_file, "r") as f:
-    json_data = f.read()
+    json_data = json.load(f)
 print("Input JSON config data =\n", json_data, sep='')
 
 # Convert configuration to CORECONF/CBOR
@@ -19,5 +20,8 @@ cbor_data = ccm.toCORECONF(config_file) # can also take json_data
 print("Encoded CBOR data (CORECONF payload) =", cbor_data.hex())
 
 # Decode CBOR data back to JSON configuration data
-decoded_json = ccm.toJSON(cbor_data)
+decoded_json = ccm.toJSON(cbor_data, return_pydict=True)
 print("Decoded config data =", decoded_json)
+
+assert decoded_json == json_data
+print("OK")
