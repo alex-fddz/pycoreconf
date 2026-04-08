@@ -75,7 +75,30 @@ class CORECONFModel(ModelSID):
         Cast leaf value to correct Python data type according to YANG data type.
         """
 
-        if type(dtype) is str:
+        # XXX: Refactor and/or split (encoding/decoding) this function.
+
+        BITS_CBOR_TAG_VALUE = 43
+        ENUMERATION_CBOR_TAG_VALUE = 44
+        IDENTITYREF_CBOR_TAG_VALUE = 45
+        INSTANCE_IDENTIFIER_CBOR_TAG_VALUE = 46
+        SID_CBOR_TAG_VALUE =  47
+
+        if isinstance(obj, cbor.CBORTag):
+            # Decoding:
+            if obj.tag == BITS_CBOR_TAG_VALUE:
+                return str(obj.value)
+            if obj.tag == ENUMERATION_CBOR_TAG_VALUE:
+                return dtype[str(obj.value)]
+            if obj.tag == IDENTITYREF_CBOR_TAG_VALUE:
+                return self.ids[obj.value]
+            if obj.tag == INSTANCE_IDENTIFIER_CBOR_TAG_VALUE:
+                return obj.value # ?
+            if obj.tag == SID_CBOR_TAG_VALUE:
+                return obj.value # ?
+            else:
+                print(f"[X] Unexpected CBOR Tag {obj.tag}.")
+
+        elif type(dtype) is str:
             if dtype == "string":
                 return str(obj)
             elif dtype in ["int8", "int16", "int32", "int64",
@@ -94,33 +117,55 @@ class CORECONFModel(ModelSID):
                 else:
                     return float(obj)
             elif dtype == "binary":
-                if encoding: 
+                if encoding:
                     dec = base64.b64decode(obj)
-                    # return base64.b64encode(dec) # Nooo.
                     return dec
-                else: 
+                else:
                     enc = base64.b64encode(obj)
                     return enc.decode()
-                    # return base64.b64decode(enc)
             elif dtype == "boolean":
                 # ret = True if obj == "true" else False
-                return bool(obj) 
+                return bool(obj)
             elif dtype == "inet:uri":
                 return str(obj)
             elif dtype == "identityref": # sid <-> 'module:identity'
                 return self.sids[obj] if encoding else self.ids[obj]
             elif dtype in ["empty", "leafref", "instance-identifier", "bits"]: # just return obj
-                # print("[-]", dtype, ": Returning as is." )
+                print(f"[-] Data type {dtype} found: Returning as is." )
                 return obj
             else:
                 print("[X] Unrecognized obj type:", dtype, ". Returning as is.")
+
         elif type(dtype) is dict: # enumeration ({"value":"name"})
             if encoding: # inverse dict, w value as int
                 dtype = {v: int(k) for k, v in dtype.items()}
             return dtype[str(obj)]
+
         elif type(dtype) is list: # union
-            # print("[-] Union: Returning as is.")
-            return obj
+            # print(f"[-] Union: Finding subtype.. | {'encoding' if encoding else 'decoding'} | {dtype} | {obj}")
+            for sub_dtype in dtype:
+                try:
+                    # print("  > trying subtype", sub_dtype)
+                    val = self._castDataTypes(obj, sub_dtype, encoding, native_types)
+                    # print("  > OK")
+
+                    # Special cases - RFC 9254 Section 6.12
+                    if encoding:
+                        if sub_dtype == "identityref":
+                            return cbor.CBORTag(45, val)
+                        elif sub_dtype == "bits":
+                            return cbor.CBORTag(43, val)
+                        elif sub_dtype == "instance-identifier":
+                            return cbor.CBORTag(46, val)
+                        elif isinstance(sub_dtype, dict): # enumeration
+                            return cbor.CBORTag(44, val)
+
+                    return val
+
+                except Exception:
+                    continue
+
+            return obj # fallback
 
         # RFC 7951: Fallback for Decimal objects (e.g., from unrecognized typedefs)
         # Decimal values must be strings in JSON to maintain precision
@@ -129,7 +174,7 @@ class CORECONFModel(ModelSID):
             if isinstance(obj, Decimal):
                 return str(obj)
 
-        return obj
+        return obj # fallback
 
     def lookupSID(self, obj, path="/", parent=0):
         """
