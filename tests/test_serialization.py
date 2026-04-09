@@ -107,6 +107,26 @@ class TestPyCoreConf(unittest.TestCase):
         decoded = self.roundtrip(ccm, config)
         self.assertEqual(config, decoded)
 
+    # 4. identityref encoding: standalone and within union
+    def test_identityref_encoding(self):
+        sids = [
+            "samples/multisid/ietf-schc@2023-01-28.sid",
+            "samples/multisid/ietf-schc-oam@2021-11-10.sid"
+        ]
+        ccm = self.make_ccm(sids)
+        config = {
+            "ietf-schc:schc": { "rule": [ {
+                "rule-nature":"ietf-schc:nature-compression", # idref encoded as unsigned(60088)
+                "entry": [ {
+                    "field-length":"ietf-schc:fl-token-length", # union[idref] encoded as 45(60076)
+                    } ]
+            } ] } }
+        expected = bytes.fromhex("a119eabfa10181a2182319eab80481a107d82d19eaac")
+        encoded = ccm.toCORECONF(config)
+        self.assertEqual(encoded, expected)
+        decoded = ccm.toJSON(encoded, return_pydict=True)
+        self.assertEqual(config, decoded)
+
 if __name__ == "__main__":
     unittest.main()
 
