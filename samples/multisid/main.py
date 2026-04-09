@@ -18,15 +18,15 @@ config_file = "schc.json"
 
 # Convert configuration to CORECONF/CBOR
 cbor_data = ccm.toCORECONF(config_file) 
-print("Encoded CBOR data (CORECONF payload) =", cbor_data.hex())
+print(f"Encoded CBOR data (CORECONF payload) = {cbor_data.hex()}" \
+    f" ({len(cbor_data)})")
 
 # Decode CBOR data back to JSON configuration data
 decoded_json = ccm.toJSON(cbor_data)  # will validate the decoded config
-print("\nDecoded config data =", decoded_json, "\n")
+# print("\nDecoded config data =", decoded_json, "\n")
 
 # Test
 with open(config_file, "r") as f:
     original_json = json.load(f)
 assert original_json == json.loads(decoded_json)
-
-print("All Good!")
+print(f"\nDecoded JSON (size = {len(decoded_json)}) matches input config perfectly!")

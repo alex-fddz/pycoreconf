@@ -1,0 +1,41 @@
+{
+  "ietf-sid-file:sid-file": {
+    "module-name": "example-1",
+    "sid-file-status": "unpublished",
+    "assignment-range": [
+      {
+        "entry-point": "60000",
+        "size": "10"
+      }
+    ],
+    "item": [
+      {
+        "namespace": "module",
+        "identifier": "example-1",
+        "status": "unstable",
+        "sid": "60000"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/example-1:greeting",
+        "status": "unstable",
+        "sid": "60001"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/example-1:greeting/author",
+        "status": "unstable",
+        "sid": "60002",
+        "type": "string"
+      },
+      {
+        "namespace": "data",
+        "identifier": "/example-1:greeting/message",
+        "status": "unstable",
+        "sid": "60003",
+        "type": "string"
+      }
+    ],
+    "key-mapping": {}
+  }
+}

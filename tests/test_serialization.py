@@ -29,14 +29,14 @@ class TestPyCoreConf(unittest.TestCase):
 
     # 1. simple basic serialization roundtrip
     def test_basic_serialization_roundtrip(self):
-        ccm = self.make_ccm("samples/basic/example-1@unknown.sid")
+        ccm = self.make_ccm("samples/basic/example-1.sid")
         config = self.load_config_file("samples/basic/ex1-config.json")
         decoded = self.roundtrip(ccm, config)
         self.assertEqual(config, decoded)
 
     # 2. basic serialization roundtrip with config validation
     def test_serialization_with_validation_valid_config(self):
-        ccm = self.make_ccm("samples/validation/example-4-a@unknown.sid",
+        ccm = self.make_ccm("samples/validation/example-4-a.sid",
                             desc_file="samples/validation/description.json")
         ccm.add_modules_path([
             helpers.resolve_filepath("samples/validation/"),
@@ -54,7 +54,7 @@ class TestPyCoreConf(unittest.TestCase):
         self.assertEqual(config, decoded)
 
     def test_serialization_with_validation_invalid_input_config_raises(self):
-        ccm = self.make_ccm("samples/validation/example-4-a@unknown.sid",
+        ccm = self.make_ccm("samples/validation/example-4-a.sid",
                             desc_file="samples/validation/description.json")
         ccm.add_modules_path([
             helpers.resolve_filepath("samples/validation/"),
@@ -77,7 +77,7 @@ class TestPyCoreConf(unittest.TestCase):
             ccm.toCORECONF(json.dumps(bad_cfg))
 
     def test_serialization_with_validation_invalid_output_config_raises(self):
-        ccm = self.make_ccm("samples/validation/example-4-a@unknown.sid",
+        ccm = self.make_ccm("samples/validation/example-4-a.sid",
                             desc_file="samples/validation/description.json")
         ccm.add_modules_path([
             helpers.resolve_filepath("samples/validation/"),
