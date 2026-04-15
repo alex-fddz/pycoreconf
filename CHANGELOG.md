@@ -14,6 +14,7 @@
 
 ## Fixed
 - JSON encoding for 64-bit numeric types (RFC 7951)
+- Encoding of union subtypes with CBOR Tags (RFC 9254)
 
 ## [0.1.1] - 2026-03-20
 
