@@ -2,7 +2,11 @@ import unittest
 import helpers
 import pycoreconf
 import json
-from yangson.exceptions import YangTypeError
+
+try:
+    from yangson.exceptions import YangTypeError
+except ImportError:
+    yangson = None
 
 class TestPyCoreConf(unittest.TestCase):
     # Helper: create model from one or more SID paths (relative from project root)
@@ -35,6 +39,7 @@ class TestPyCoreConf(unittest.TestCase):
         self.assertEqual(config, decoded)
 
     # 2. basic serialization roundtrip with config validation
+    @unittest.skipIf(yangson is None, "yangson not installed")
     def test_serialization_with_validation_valid_config(self):
         ccm = self.make_ccm("samples/validation/example-4-a.sid",
                             desc_file="samples/validation/description.json")
@@ -53,6 +58,7 @@ class TestPyCoreConf(unittest.TestCase):
         decoded = self.roundtrip(ccm, config)
         self.assertEqual(config, decoded)
 
+    @unittest.skipIf(yangson is None, "yangson not installed")
     def test_serialization_with_validation_invalid_input_config_raises(self):
         ccm = self.make_ccm("samples/validation/example-4-a.sid",
                             desc_file="samples/validation/description.json")
@@ -76,6 +82,7 @@ class TestPyCoreConf(unittest.TestCase):
         with self.assertRaises(pycoreconf.ConfigValidationError) as cm:
             ccm.toCORECONF(json.dumps(bad_cfg))
 
+    @unittest.skipIf(yangson is None, "yangson not installed")
     def test_serialization_with_validation_invalid_output_config_raises(self):
         ccm = self.make_ccm("samples/validation/example-4-a.sid",
                             desc_file="samples/validation/description.json")

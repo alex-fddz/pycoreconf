@@ -10,7 +10,7 @@
 
 ### Changed
 - API: `sid_files` accepts both list and single string path
-- Require `yangson` module to enable validation by default
+- Add optional validation feature install (`yangson` dependency)
 
 ## Fixed
 - JSON encoding for 64-bit numeric types (RFC 7951)

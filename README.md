@@ -10,10 +10,11 @@ CORECONF uses a CBOR mapping of YANG to keep message sizes extremely low, and su
 
 ## Installation
 
-From PyPI:
+From PyPI, minimal install or with optional data validation support:
 
 ```
 pip install pycoreconf
+pip install pycoreconf[validation]
 ```
 
 From source:
@@ -42,8 +43,8 @@ pip uninstall pycoreconf
 
 ## Requirements & Setup
 
-- [ltn22/pyang](https://github.com/ltn22/pyang/) module. Allows the generation of the model's SID file including leaves' data types. Provides YANG IETF modules necessary for config validation.
-- SID file generated as follows (see `tools/gen_sid.sh`):
+- [ltn22/pyang](https://github.com/ltn22/pyang/) module. Allows the generation of the model's SID file including leaves' data types and list key mappings.
+- Extended SID file, generated as follows (see `tools/gen_sid.sh`):
 
     ```
     pyang --sid-generate-file $ENTRY:$SIZE --sid-list --sid-extension $YANG [-p $MODULES]
@@ -57,10 +58,9 @@ pip uninstall pycoreconf
 
     > *Note*: The range of 60,000 to 99,999 (size 40,000) is reserved for experimental YANG modules. The size of the SID range allocated for a YANG module is recommended to be a multiple of 50 and to be at least 33% above the current number of YANG items.
 
-- A YANG data model description JSON file (see `samples/validation/description.json`).
-- Dependencies:
-    - `cbor2`
-    - `yangson`
+- For data validation against YANG data model(s):
+    - A YANG data model description JSON file (see `samples/validation/description.json`).
+    - Validation dependency install (`pycoreconf[validation]`).
 
 ## API and Usage
 

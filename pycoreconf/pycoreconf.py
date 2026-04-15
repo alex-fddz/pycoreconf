@@ -479,7 +479,12 @@ class CORECONFModel(ModelSID):
         if self.model_description_file is None:
             # print("No model description file specified. Skipping validation.")
             return False
-        from yangson import DataModel
+
+        try:
+            from yangson import DataModel
+        except ImportError:
+            raise ImportError("Validation requires 'yangson' package.")
+
         dm = DataModel.from_file(self.model_description_file, 
             self.yang_ietf_modules_paths)
         data = dm.from_raw(config)

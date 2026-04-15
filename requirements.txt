@@ -1,3 +1,1 @@
--e .
-cbor2==5.8.0
-yangson==1.6.1
+-e .[validation]
