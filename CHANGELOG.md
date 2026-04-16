@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- Migrated to pyproject.toml + src layout
+
+### Fixed
+- Dependency handling in config validation test
+
 ## [0.2.0] - 2026-04-15
 
 ### Added

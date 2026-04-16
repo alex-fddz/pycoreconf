@@ -7,7 +7,7 @@ except Exception:
     TYPE_CHECKING = False
 
 if TYPE_CHECKING:
-    from .pycoreconf import CORECONFModel
+    from .model import CORECONFModel
 
 class CORECONFDatastore:
     """

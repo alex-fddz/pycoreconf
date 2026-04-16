@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pycoreconf"
+version = "0.3.0"
+description = "open-source implementation of CORECONF (CoAP Management Interface)"
+readme = "README.md"
+requires-python = ">=3.7, <4"
+authors = [
+    { name = "Javier A. Fernandez", email = "javier.fddz@gmail.com" }
+]
+keywords = ["coreconf", "comi", "coap", "yang"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent"
+]
+
+dependencies = [
+    "cbor2>=5.8,<6.0"
+]
+
+[project.optional-dependencies]
+validation = [
+    "yangson>=1.6,<2.0"
+]
+
+[project.urls]
+"Source Code" = "https://github.com/alex-fddz/pycoreconf"
+"Bug Tracker" = "https://github.com/alex-fddz/pycoreconf/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.exclude-package-data]
+"*" = [
+    "*.pyc",
+    "__pycache__"
+]

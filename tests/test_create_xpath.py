@@ -5,6 +5,7 @@ import unittest
 import helpers
 
 import pycoreconf
+from pycoreconf.datastore import CORECONFDatastore
 
 
 class _SimpleModel:
@@ -74,14 +75,14 @@ class _IdentityrefKeyModel:
 
 class TestCreateXpathUnknownSid(unittest.TestCase):
     def test_raises_key_error(self):
-        ds = pycoreconf.CORECONFDatastore(_SimpleModel(), {})
+        ds = CORECONFDatastore(_SimpleModel(), {})
         with self.assertRaises(KeyError):
             ds._create_xpath(9999)
 
 
 class TestCreateXpathNoList(unittest.TestCase):
     def setUp(self):
-        self.ds = pycoreconf.CORECONFDatastore(_SimpleModel(), {})
+        self.ds = CORECONFDatastore(_SimpleModel(), {})
 
     def test_container(self):
         self.assertEqual(self.ds._create_xpath(100), "/root")
@@ -95,7 +96,7 @@ class TestCreateXpathNoList(unittest.TestCase):
 
 class TestCreateXpathStringKey(unittest.TestCase):
     def setUp(self):
-        self.ds = pycoreconf.CORECONFDatastore(_StringKeyModel(), {})
+        self.ds = CORECONFDatastore(_StringKeyModel(), {})
 
     def test_list_node_with_key(self):
         self.assertEqual(self.ds._create_xpath(110, keys=["foo"]), "/root/list[name='foo']")
@@ -109,7 +110,7 @@ class TestCreateXpathStringKey(unittest.TestCase):
 
 class TestCreateXpathEnumKey(unittest.TestCase):
     def setUp(self):
-        self.ds = pycoreconf.CORECONFDatastore(_EnumKeyModel(), {})
+        self.ds = CORECONFDatastore(_EnumKeyModel(), {})
 
     def test_int_enum_key_resolved_to_name(self):
         # int key 1 → enum value "delta"
@@ -128,7 +129,7 @@ class TestCreateXpathEnumKey(unittest.TestCase):
 
 class TestCreateXpathIdentityrefKey(unittest.TestCase):
     def setUp(self):
-        self.ds = pycoreconf.CORECONFDatastore(_IdentityrefKeyModel(), {})
+        self.ds = CORECONFDatastore(_IdentityrefKeyModel(), {})
 
     def test_int_identityref_key_resolved_to_path(self):
         # int SID 200 → ids[200] = "/mymod:solar-radiation"

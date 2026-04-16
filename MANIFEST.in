@@ -1,0 +1,7 @@
+prune tests
+prune samples
+prune tools
+prune docs
+
+global-exclude *.pyc
+global-exclude __pycache__

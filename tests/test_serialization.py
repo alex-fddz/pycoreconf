@@ -1,12 +1,13 @@
 import unittest
 import helpers
 import pycoreconf
+from pycoreconf.model import ConfigValidationError
 import json
 
 try:
     from yangson.exceptions import YangTypeError
 except ImportError:
-    yangson = None
+    YangTypeError = None
 
 class TestPyCoreConf(unittest.TestCase):
     # Helper: create model from one or more SID paths (relative from project root)
@@ -39,7 +40,7 @@ class TestPyCoreConf(unittest.TestCase):
         self.assertEqual(config, decoded)
 
     # 2. basic serialization roundtrip with config validation
-    @unittest.skipIf(yangson is None, "yangson not installed")
+    @unittest.skipIf(YangTypeError is None, "yangson not installed")
     def test_serialization_with_validation_valid_config(self):
         ccm = self.make_ccm("samples/validation/example-4-a.sid",
                             desc_file="samples/validation/description.json")
@@ -58,7 +59,7 @@ class TestPyCoreConf(unittest.TestCase):
         decoded = self.roundtrip(ccm, config)
         self.assertEqual(config, decoded)
 
-    @unittest.skipIf(yangson is None, "yangson not installed")
+    @unittest.skipIf(YangTypeError is None, "yangson not installed")
     def test_serialization_with_validation_invalid_input_config_raises(self):
         ccm = self.make_ccm("samples/validation/example-4-a.sid",
                             desc_file="samples/validation/description.json")
@@ -79,10 +80,10 @@ class TestPyCoreConf(unittest.TestCase):
         self.assertIn("invalid-type: expected uint8", err)
         self.assertIn("{/example-4-a:bag/foo}", err)
 
-        with self.assertRaises(pycoreconf.ConfigValidationError) as cm:
+        with self.assertRaises(ConfigValidationError) as cm:
             ccm.toCORECONF(json.dumps(bad_cfg))
 
-    @unittest.skipIf(yangson is None, "yangson not installed")
+    @unittest.skipIf(YangTypeError is None, "yangson not installed")
     def test_serialization_with_validation_invalid_output_config_raises(self):
         ccm = self.make_ccm("samples/validation/example-4-a.sid",
                             desc_file="samples/validation/description.json")
@@ -100,7 +101,7 @@ class TestPyCoreConf(unittest.TestCase):
             0x19, 0x01, 0x00, # unsigned(256)
         ])
 
-        with self.assertRaises(pycoreconf.ConfigValidationError) as cm:
+        with self.assertRaises(ConfigValidationError) as cm:
             ccm.toJSON(bad_cbor_data)
 
     # 3. multisid serialization roundtrip
