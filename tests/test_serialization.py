@@ -51,8 +51,8 @@ class TestPyCoreConf(unittest.TestCase):
 
         config = { "example-4-a:bag": { "foo": 42 } }
 
-        valid = ccm.validateConfig(config)
-        self.assertEqual(valid, True)
+        # Should not raise
+        ccm._validate_config(config)
 
         # config = json.dumps(config)
         # Test encode/decode roundtrip
@@ -73,7 +73,7 @@ class TestPyCoreConf(unittest.TestCase):
 
         with self.assertRaises(YangTypeError) as cm:
             # call the code that should raise, e.g. apply/validate the config
-            ccm.validateConfig(bad_cfg)
+            ccm._validate_config(bad_cfg)
 
         # Optionally assert the exception message contains the expected substring
         err = str(cm.exception)

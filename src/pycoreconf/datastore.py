@@ -439,7 +439,7 @@ class CORECONFDatastore:
             parent_sid = self.model.sids.get(parent_path)
             
             if parent_sid:
-                result = self.model.findSID(self.data, sid=parent_sid, keys=keys)
+                result = self.model._execute_sid_query(self.data, sid=parent_sid, keys=keys)
                 if result is None:
                     return None
 
@@ -452,7 +452,7 @@ class CORECONFDatastore:
                 
                 value_copy = copy.deepcopy(value)
                 wrapped = {parent_sid: value_copy}
-                self.model.lookupIdentifierWithoutRecursion(wrapped, delta=0, path=parent_parent_path)
+                self.model._sid_to_identifier_tree(wrapped, delta=0, path=parent_parent_path)
                 
                 node_identifier = parent_path.split('/')[-1]
                 entry = wrapped.get(node_identifier, value_copy)
@@ -465,7 +465,7 @@ class CORECONFDatastore:
                     return None
         
         # Default path resolution for container queries
-        result = self.model.findSID(self.data, sid=target_sid, keys=keys)
+        result = self.model._execute_sid_query(self.data, sid=target_sid, keys=keys)
         
         if result is None:
             return None  # when used in test, this allows checking for non-existence without raising an exception
@@ -483,7 +483,7 @@ class CORECONFDatastore:
         
         # Create wrapped structure and convert
         wrapped = {target_sid: value_copy}
-        self.model.lookupIdentifierWithoutRecursion(wrapped, delta=0, path=parent_path)
+        self.model._sid_to_identifier_tree(wrapped, delta=0, path=parent_path)
         
         # Extract converted value
         node_identifier = target_path.split('/')[-1]
@@ -552,7 +552,7 @@ class CORECONFDatastore:
         else:
             cbor_value = value
         
-        result = self.model.findSID(self.data, sid=target_sid, keys=keys, value=cbor_value)
+        result = self.model._execute_sid_query(self.data, sid=target_sid, keys=keys, value=cbor_value)
         
         if result is None:
             # Materialize missing path parts in JSON (containers + list entries).
@@ -673,7 +673,7 @@ class CORECONFDatastore:
         if keys:
             return [_format_predicates_from_values(keys)]
 
-        child = self.model.findSID(self.data, sid=target_sid, keys=[])
+        child = self.model._execute_sid_query(self.data, sid=target_sid, keys=[])
         if child is None:
             return []
 

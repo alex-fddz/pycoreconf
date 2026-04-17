@@ -12,34 +12,32 @@ class ConfigValidationError(Exception):
     pass
 
 
-class ValueClass:
-    """
-    Wrapper class to encapsulate objects through the iteration
-    """
+class _ValueWrapper:
+    """Wrapper class to encapsulate objects through the SID tree iteration."""
+
     def __init__(self, value):
         self.value = value
 
-def unwrapValues(object):
-    """
-    A function to unwrap Value objects properly, used by lookupSIDWithoutRecursion function
-    """
-    internalStack = [object]
+def _unwrap_values(obj):
+    """Unwrap ValueWrapper objects after iterative SID tree transformation."""
 
-    while internalStack:
-        currentObject = internalStack.pop()
+    internal_stack = [obj]
 
-        if type(currentObject) == dict:
-            keys = list(currentObject.keys())
+    while internal_stack:
+        current_object = internal_stack.pop()
+
+        if type(current_object) == dict:
+            keys = list(current_object.keys())
             for key in keys:
-                currentObject[key] = currentObject[key].value
-                internalStack.append(currentObject[key])
+                current_object[key] = current_object[key].value
+                internal_stack.append(current_object[key])
         
-        elif type(currentObject) == list:
-            for i in range(len(currentObject)):
-                currentObject[i] = currentObject[i].value
-                internalStack.append(currentObject[i])
+        elif type(current_object) == list:
+            for i in range(len(current_object)):
+                current_object[i] = current_object[i].value
+                internal_stack.append(current_object[i])
 
-    return object
+    return obj
 
 
 class CORECONFModel(ModelSID):
@@ -60,7 +58,7 @@ class CORECONFModel(ModelSID):
     def add_modules_path(self, path):
         """
         Config / Add a path or list of paths to yang ietf modules location.
-        Required for decoded configuration data validation.
+        Required for configuration data validation.
         """
 
         if type(path) is str:
@@ -70,9 +68,21 @@ class CORECONFModel(ModelSID):
         else:
             raise TypeError("Can only add path string or list of paths.")
 
-    def _castDataTypes(self, obj, dtype, encoding, native_types=True):
+    def _convert_leaf_value(self, leaf, dtype, encoding, native_types=True):
         """
-        Cast leaf value to correct Python data type according to YANG data type.
+        Convert a leaf value between model (Python/JSON) and CBOR representations
+        according to its YANG data type.
+
+        Args:
+            leaf: The input leaf value.
+            dtype: The YANG data type definition for the value.
+            encoding (bool): If True, convert from model representation to CBOR-compatible
+                form. If False, convert from CBOR to model representation.
+            native_types (bool): If False during decoding, preserve JSON-compatible
+                representations (e.g. int64/decimal64 as strings).
+
+        Returns:
+            The converted value.
         """
 
         # XXX: Refactor and/or split (encoding/decoding) this function.
@@ -83,104 +93,110 @@ class CORECONFModel(ModelSID):
         INSTANCE_IDENTIFIER_CBOR_TAG_VALUE = 46
         SID_CBOR_TAG_VALUE =  47
 
-        if isinstance(obj, cbor.CBORTag):
+        if isinstance(leaf, cbor.CBORTag):
             # Decoding:
-            if obj.tag == BITS_CBOR_TAG_VALUE:
-                return str(obj.value)
-            if obj.tag == ENUMERATION_CBOR_TAG_VALUE:
-                return dtype[str(obj.value)]
-            if obj.tag == IDENTITYREF_CBOR_TAG_VALUE:
-                return self.ids[obj.value]
-            if obj.tag == INSTANCE_IDENTIFIER_CBOR_TAG_VALUE:
-                return obj.value # ?
-            if obj.tag == SID_CBOR_TAG_VALUE:
-                return obj.value # ?
+            if leaf.tag == BITS_CBOR_TAG_VALUE:
+                return str(leaf.value)
+            if leaf.tag == ENUMERATION_CBOR_TAG_VALUE:
+                return dtype[str(leaf.value)]
+            if leaf.tag == IDENTITYREF_CBOR_TAG_VALUE:
+                return self.ids[leaf.value]
+            if leaf.tag == INSTANCE_IDENTIFIER_CBOR_TAG_VALUE:
+                return leaf.value # ?
+            if leaf.tag == SID_CBOR_TAG_VALUE:
+                return leaf.value # ?
             else:
-                print(f"[X] Unexpected CBOR Tag {obj.tag}.")
+                print(f"[X] Unexpected CBOR Tag {leaf.tag}.")
 
         elif type(dtype) is str:
             if dtype == "string":
-                return str(obj)
+                return str(leaf)
             elif dtype in ["int8", "int16", "int32", "int64",
                             "uint8", "uint16", "uint32", "uint64"]:
                 # RFC 7951: int64/uint64 must be strings in JSON to avoid precision loss,
                 # but CBOR uses native integers. Smaller types are safe as JSON numbers.
                 if not encoding and dtype in ["int64", "uint64"] and not native_types:
-                    return str(obj)
+                    return str(leaf)
                 else:
-                    return int(obj)
+                    return int(leaf)
             elif dtype == "decimal64":
                 # RFC 7951: decimal64 must be a string in JSON to avoid precision loss,
                 # but CBOR can use a float or string representation
                 if not encoding and not native_types:
-                    return str(obj)
+                    return str(leaf)
                 else:
-                    return float(obj)
+                    return float(leaf)
             elif dtype == "binary":
                 if encoding:
-                    dec = base64.b64decode(obj)
+                    dec = base64.b64decode(leaf)
                     return dec
                 else:
-                    enc = base64.b64encode(obj)
+                    enc = base64.b64encode(leaf)
                     return enc.decode()
             elif dtype == "boolean":
                 # ret = True if obj == "true" else False
-                return bool(obj)
+                return bool(leaf)
             elif dtype == "inet:uri":
-                return str(obj)
+                return str(leaf)
             elif dtype == "identityref": # sid <-> 'module:identity'
-                return self.sids[obj] if encoding else self.ids[obj]
+                return self.sids[leaf] if encoding else self.ids[leaf]
             elif dtype in ["empty", "leafref", "instance-identifier", "bits"]: # just return obj
                 print(f"[-] Data type {dtype} found: Returning as is." )
-                return obj
+                return leaf
             else:
                 print("[X] Unrecognized obj type:", dtype, ". Returning as is.")
 
         elif type(dtype) is dict: # enumeration ({"value":"name"})
             if encoding: # inverse dict, w value as int
                 dtype = {v: int(k) for k, v in dtype.items()}
-            return dtype[str(obj)]
+            return dtype[str(leaf)]
 
         elif type(dtype) is list: # union
             # print(f"[-] Union: Finding subtype.. | {'encoding' if encoding else 'decoding'} | {dtype} | {obj}")
             for sub_dtype in dtype:
                 try:
                     # print("  > trying subtype", sub_dtype)
-                    val = self._castDataTypes(obj, sub_dtype, encoding, native_types)
+                    val = self._convert_leaf_value(leaf, sub_dtype, encoding, native_types)
                     # print("  > OK")
 
                     # Special cases - RFC 9254 Section 6.12
                     if encoding:
                         if sub_dtype == "identityref":
-                            return cbor.CBORTag(45, val)
+                            return cbor.CBORTag(IDENTITYREF_CBOR_TAG_VALUE, val)
                         elif sub_dtype == "bits":
-                            return cbor.CBORTag(43, val)
+                            return cbor.CBORTag(BITS_CBOR_TAG_VALUE, val)
                         elif sub_dtype == "instance-identifier":
-                            return cbor.CBORTag(46, val)
+                            return cbor.CBORTag(INSTANCE_IDENTIFIER_CBOR_TAG_VALUE, val)
                         elif isinstance(sub_dtype, dict): # enumeration
-                            return cbor.CBORTag(44, val)
+                            return cbor.CBORTag(ENUMERATION_CBOR_TAG_VALUE, val)
 
                     return val
 
                 except Exception:
                     continue
 
-            return obj # fallback
+            return leaf # fallback
 
         # RFC 7951: Fallback for Decimal objects (e.g., from unrecognized typedefs)
         # Decimal values must be strings in JSON to maintain precision
         if not encoding and not native_types:
             from decimal import Decimal
-            if isinstance(obj, Decimal):
-                return str(obj)
+            if isinstance(leaf, Decimal):
+                return str(leaf)
 
-        return obj # fallback
+        return leaf # fallback
 
-    def lookupSID(self, obj, path="/", parent=0):
+    def _identifier_to_sid_tree_recursive(self, obj, path="/", parent=0):
         """
-        Look up SID for *obj* under *path*. 
-        Dive in if it's a dictionary or a list of elements.
-        > Deprecated for lookupSIDWithoutRecursion.
+        Convert an identifier-keyed tree into a SID-keyed tree (recursive).
+
+        Args:
+            obj: Current identifier-based tree.
+            path: Current identifier path.
+            parent: Parent SID.
+
+        Returns:
+            SID-keyed tree.
         """
 
         if type(obj) is dict:
@@ -189,7 +205,7 @@ class CORECONFModel(ModelSID):
                 element = path + k      # get full identifier path
                 key = self.sids[element]     # look for SID value
 
-                value = self.lookupSID(v, element+"/", key)  # dive in
+                value = self._identifier_to_sid_tree_recursive(v, element+"/", key)  # dive in
 
                 json_dict[key-parent] = value
             return json_dict
@@ -197,7 +213,7 @@ class CORECONFModel(ModelSID):
         elif type(obj) is list:
             json_list = []
             for e in obj:   # get each element of the list
-                value = self.lookupSID(e, path, parent)  # dive in
+                value = self._identifier_to_sid_tree_recursive(e, path, parent)  # dive in
                 json_list.append(value)
             return json_list
 
@@ -206,43 +222,51 @@ class CORECONFModel(ModelSID):
             # get leaf data type according to model
             # and cast to correct data type.
             dtype = self.types[path[:-1]]
-            return self._castDataTypes(obj, dtype, encoding=True)
+            return self._convert_leaf_value(obj, dtype, encoding=True)
             
-    def lookupSIDWithoutRecursion(self, jsonData, path='/', parent=0):
+    def _identifier_to_sid_tree(self, obj, path='/', parent=0):
         """
-        a clone of lookupSID method which uses non recursive methods to compute SIDs and build the object
+        Convert an identifier-keyed tree into a SID-keyed tree (iterative).
+
+        Args:
+            obj: Current identifier-based tree.
+            path: Current identifier path.
+            parent: Parent SID.
+
+        Returns:
+            SID-keyed tree.
         """
-        
-        stack = [(ValueClass(jsonData), path, parent)]
+
+        stack = [(_ValueWrapper(obj), path, parent)]
 
         while stack:
-            currentObject, currentPath, currentParent = stack.pop()
-            currentValue  = currentObject.value
+            current_object, current_path, current_parent = stack.pop()
+            current_value  = current_object.value
 
-            # currentValue is a dict here, iterate through key/value pairs and add values to the stack
-            if type(currentValue) == dict:
-                keys = list(currentValue.keys())
+            # current_value is a dict here, iterate through key/value pairs and add values to the stack
+            if type(current_value) == dict:
+                keys = list(current_value.keys())
 
                 for key in keys:
-                    qualifiedPath = currentPath + key
-                    childSIDValue = self.sids[qualifiedPath]
-                    sidDiff  = childSIDValue - currentParent
-                    currentValue[sidDiff] = ValueClass(currentValue.pop(key))
-                    stack.append((currentValue[sidDiff], qualifiedPath+"/", childSIDValue))
+                    qualified_path = current_path + key
+                    child_sid_value = self.sids[qualified_path]
+                    sid_diff  = child_sid_value - current_parent
+                    current_value[sid_diff] = _ValueWrapper(current_value.pop(key))
+                    stack.append((current_value[sid_diff], qualified_path+"/", child_sid_value))
             
-            # currentValue is a list type, append each of the object in currentValue to the stack
-            elif type(currentValue) == list:
-                for i in range(len(currentValue)):
-                    currentValue[i] = ValueClass(currentValue[i])
-                    stack.append((currentValue[i], currentPath, currentParent))
+            # current_value is a list type, append each of the object in current_value to the stack
+            elif type(current_value) == list:
+                for i in range(len(current_value)):
+                    current_value[i] = _ValueWrapper(current_value[i])
+                    stack.append((current_value[i], current_path, current_parent))
             
-            # currentValue is a leaf here, transform their datatype 
+            # current_value is a leaf here, transform their datatype
             else:
-                dtype = self.types[currentPath[:-1]]
-                currentObject.value = self._castDataTypes(currentObject.value, dtype, encoding=True)
+                dtype = self.types[current_path[:-1]]
+                current_object.value = self._convert_leaf_value(current_object.value, dtype, encoding=True)
         
         # Unwrap the ValueClass objects before returning
-        return(unwrapValues(jsonData))
+        return(_unwrap_values(obj))
 
     def toCORECONF(self, config):
         """
@@ -264,20 +288,29 @@ class CORECONFModel(ModelSID):
 
         # Attempt to validate the input config: python dict
         try:
-            valid = self.validateConfig(cfg_dict) # valid -> validated or not
+            self._validate_config(cfg_dict)
         except Exception as e:
             # Add context and preserve the original exception chain
             raise ConfigValidationError(f"Input config validation failed: {e}") from e
 
         # Transform to CORECONF/CBOR
-        cc = self.lookupSIDWithoutRecursion(cfg_dict)
+        cc = self._identifier_to_sid_tree(cfg_dict)
 
         return cbor.dumps(cc)
 
-    def lookupIdentifier(self, obj, delta=0, path="/", native_types=True):
+    def _sid_to_identifier_tree_recursive(self, obj, delta=0, path="/", native_types=True):
         """
-        Look up leaf identifier for *obj* SID value. 
-        Dive in if it's a dictionary or a list of elements.
+        Convert a SID-keyed tree into an identifier-keyed tree (recursive).
+
+        Args:
+            obj: Current SID-based tree.
+            delta: SID offset from parent.
+            path: Current identifier path.
+            native_types: If True, use native Python types for leaf value conversion;
+                if False, use JSON-encoding of YANG data representation.
+
+        Returns:
+            Identifier-keyed tree.
         """
 
         if type(obj) is dict:
@@ -286,7 +319,7 @@ class CORECONFModel(ModelSID):
                 sid = k + delta             # get full identifier path
                 identifier = self.ids[sid]       # look for SID value
 
-                value = self.lookupIdentifier(v, sid, identifier, native_types)    # dive in
+                value = self._sid_to_identifier_tree_recursive(v, sid, identifier, native_types)    # dive in
 
                 json_key = identifier[len(path):].lstrip("/")
                 json_dict[json_key] = value
@@ -295,7 +328,7 @@ class CORECONFModel(ModelSID):
         elif type(obj) is list:
             json_list = []
             for e in obj:   # get each element of the list
-                value = self.lookupIdentifier(e, delta, path, native_types)    # dive in
+                value = self._sid_to_identifier_tree_recursive(e, delta, path, native_types)    # dive in
                 json_list.append(value)
             return json_list
 
@@ -304,59 +337,71 @@ class CORECONFModel(ModelSID):
             # get leaf data type according to model
             # and cast to correct data type.
             dtype = self.types[path]
-            return self._castDataTypes(obj, dtype, encoding=False, native_types=native_types)
+            return self._convert_leaf_value(obj, dtype, encoding=False, native_types=native_types)
 
-    def lookupIdentifierWithoutRecursion(self, obj, delta=0, path='/', native_types=True):
+    def _sid_to_identifier_tree(self, obj, delta=0, path='/', native_types=True):
         """
-        A clone of lookupIdentifier method which uses non recursive methods to build the original JSON Object from SID represented Object
+        Convert a SID-keyed tree into an identifier-keyed tree (iterative).
+
+        Args:
+            obj: Current SID-based tree.
+            delta: SID offset from parent.
+            path: Current identifier path.
+            native_types: If True, use native Python types for leaf value conversion;
+                if False, use JSON-encoding of YANG data representation.
+
+        Returns:
+            Identifier-keyed tree.
         """
-        stack = [(ValueClass(obj), delta, path)]
+
+        stack = [(_ValueWrapper(obj), delta, path)]
 
         while stack:
-            currentObject, currentDelta, currentPath = stack.pop()
-            currentValue = currentObject.value
+            current_object, current_delta, current_path = stack.pop()
+            current_value = current_object.value
 
-            # currentValue is a dict here, iterate through key/value pairs and add values to the stack
-            if type(currentValue) is dict:
-                keys = list(currentValue.keys())
+            # current_value is a dict here, iterate through key/value pairs and add values to the stack
+            if type(current_value) is dict:
+                keys = list(current_value.keys())
                 for key in keys:
                     # get full identifier path
                     
-                    sid = key + currentDelta
+                    sid = key + current_delta
                     # look for the original identifiers
                     identifier = self.ids[sid]
-                    nodeIdentifier = identifier[len(currentPath):].lstrip("/")
-                    currentValue[nodeIdentifier] = ValueClass(currentValue.pop(key))
-                    stack.append((currentValue[nodeIdentifier], sid, identifier))
+                    node_identifier = identifier[len(current_path):].lstrip("/")
+                    current_value[node_identifier] = _ValueWrapper(current_value.pop(key))
+                    stack.append((current_value[node_identifier], sid, identifier))
         
-            # currentValue is a list type, append each of the object in currentValue to the stack
-            elif type(currentValue) is list:
-                for i in range(len(currentValue)):
-                    currentValue[i] = ValueClass(currentValue[i])
-                    stack.append((currentValue[i], currentDelta, currentPath))
+            # current_value is a list type, append each of the object in currentValue to the stack
+            elif type(current_value) is list:
+                for i in range(len(current_value)):
+                    current_value[i] = _ValueWrapper(current_value[i])
+                    stack.append((current_value[i], current_delta, current_path))
 
-            # currentValue is a leaf here, transform their datatype before adding to the currentObject
+            # current_value is a leaf here, transform their datatype before adding to the current_object
             else:
-                dtype = self.types[currentPath]
-                currentObject.value = self._castDataTypes(currentObject.value, dtype, encoding=False, native_types=native_types)
+                dtype = self.types[current_path]
+                current_object.value = self._convert_leaf_value(current_object.value, dtype, encoding=False, native_types=native_types)
 
         # Unwrap the ValueClass objects before returning
-        return(unwrapValues(obj))
+        return(_unwrap_values(obj))
 
-    def findSID(self, obj, sid=None, keys=None, value=None, delta=0, path='/', depth=None):
+    def _execute_sid_query(self, obj, sid=None, keys=None, value=None, delta=0, path='/', depth=None):
         """
-        Recursive SID lookup/setter that preserves the tree structure.
-        Returns {sid: value} when found, otherwise None.
+        SID query engine used by datastore (lookup, update, subtree extraction).
 
-        depth (int or None): maximum depth of the returned sub-tree.
-            None / absent → full sub-tree (unbounded).
-            0             → only direct scalar leaves, no nested containers.
-            N             → N levels of nesting below the matched node.
+        Args:
+            obj: SID-keyed configuration tree.
+            sid: Target SID.
+            keys: List of key values for list resolution.
+            value: If set, updates matched node.
+            delta: SID traversal offset.
+            path: Current path context.
+            depth: Max subtree depth (None=full, 0=leaves only, n=levels below match).
 
-        no_keys (bool): if True and the target SID is a list node, return all
-            entries without requiring keys (CoMI keyless list discovery).
-            Keys are always required when navigating *through* a list to reach
-            a descendant node.
+        Returns:
+            {sid: subtree/value} or None.
         """
 
         if keys is None:
@@ -456,11 +501,11 @@ class CORECONFModel(ModelSID):
         """
 
         data = cbor.loads(cbor_data)
-        pyd = self.lookupIdentifierWithoutRecursion(data, native_types=return_pydict)
+        pyd = self._sid_to_identifier_tree(data, native_types=return_pydict)
 
         # Attempt to validate the output config
         try:
-            valid = self.validateConfig(pyd) # valid -> validated or not
+            self._validate_config(pyd)
         except Exception as e:
             # Add context and preserve the original exception chain
             raise ConfigValidationError(f"Output config validation failed: {e}") from e
@@ -470,27 +515,26 @@ class CORECONFModel(ModelSID):
         # Return JSON obj / pyDict
         return pyd if return_pydict else json.dumps(pyd) 
 
-    def validateConfig(self, config):
+    def _validate_config(self, config):
         """
-        Validate Python Dictionary config against module specification.
-        Requires model description file and configured yang/ietf modules paths.
+        Validate Python dictionary config against the model.
+        Raises on validation error. No-op if validation is not configured.
         """
 
         if self.model_description_file is None:
-            # print("No model description file specified. Skipping validation.")
-            return False
+            return  # no validation configured
 
         try:
             from yangson import DataModel
         except ImportError:
             raise ImportError("Validation requires 'yangson' package.")
 
-        dm = DataModel.from_file(self.model_description_file, 
-            self.yang_ietf_modules_paths)
+        dm = DataModel.from_file(
+            self.model_description_file,
+            self.yang_ietf_modules_paths
+        )
         data = dm.from_raw(config)
         data.validate()
-        # print("Config validation OK.")
-        return True
 
     def create_datastore(self, cbor_data = cbor.dumps({})):
         """
