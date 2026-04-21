@@ -268,9 +268,39 @@ class CORECONFModel(ModelSID):
         # Unwrap the ValueClass objects before returning
         return(_unwrap_values(obj))
 
+    def encode(self, config: dict) -> bytes:
+        """
+        Encode a Python dictionary config into CORECONF.
+        """
+
+        # "deepcopy" to not modify the input
+        config_cpy = json.loads(json.dumps(config))
+
+        # Transform to CORECONF
+        cc = self._identifier_to_sid_tree(config_cpy)
+
+        return cbor.dumps(cc)
+    
+    def encode_json(self, json_config: str) -> bytes:
+        """
+        Encode a JSON-formatted string or .json file into CORECONF.
+        """
+
+        json_config = json_config.strip()
+        try:
+            # Parse the JSON string
+            config = json.loads(json_config)
+        except ValueError:
+            # Load the JSON file
+            with open(json_config, 'r') as f:
+                config = json.load(f)
+
+        return self.encode(config)
+
     def toCORECONF(self, config):
         """
         Convert JSON data, file, or dict to CORECONF.
+        > DEPRECATED: Use encode() or encode_json().
         """
 
         # Work with a python dict
@@ -495,9 +525,33 @@ class CORECONFModel(ModelSID):
 
         return _walk(obj, delta, path, keys)
 
+    def decode(self, data: bytes, as_rfc7951: bool = False) -> dict:
+        """
+        Convert CORECONF (CBOR) data to Python dictionary.
+        as_rfc7951: If False, returns python native types,
+            If True, returns RFC7951-compliant data types.
+        """
+
+        data = cbor.loads(data)
+        config = self._sid_to_identifier_tree(data, native_types=(not as_rfc7951))
+
+        # Return Python dict object
+        return config
+
+    def decode_to_json(self, data: bytes) -> str:
+        """
+        Convert CORECONF (CBOR) data to JSON-formatted string, following RFC 7951.
+        """
+
+        config = self.decode(data=data, as_rfc7951=True)
+
+        # Return JSON-formatted string
+        return json.dumps(config)
+
     def toJSON(self, cbor_data, return_pydict=False): 
         """
         Convert CORECONF (CBOR) data to JSON-formatted string (or Python dictionary with native types).
+        > DEPRECATED: Use decode() or decode_to_json().
         """
 
         data = cbor.loads(cbor_data)
@@ -514,6 +568,29 @@ class CORECONFModel(ModelSID):
         
         # Return JSON obj / pyDict
         return pyd if return_pydict else json.dumps(pyd) 
+
+    def validate_json(self, json_config: str) -> None:
+        """
+        Validate a JSON-string config against the data model (syntax, semantics).
+        Raises on validation error or misconfiguration.
+        """
+
+        if self.model_description_file is None:
+            raise RuntimeError("Model not configured for validation: missing model_description_file.")
+
+        try:
+            from yangson import DataModel
+        except ImportError:
+            raise ImportError("Validation requires 'yangson' package.")
+
+        config = json.loads(json_config)
+
+        dm = DataModel.from_file(
+            self.model_description_file,
+            self.yang_ietf_modules_paths
+        )
+        data = dm.from_raw(config)
+        data.validate()
 
     def _validate_config(self, config):
         """
