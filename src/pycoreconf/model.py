@@ -41,8 +41,17 @@ def _unwrap_values(obj):
 
 
 class CORECONFModel(ModelSID):
-    """A class to represent the YANG Model through its SID file, used
-    to convert to and from CORECONF/CBOR representation."""
+    """
+    Main class for encoding/decoding CORECONF data against a YANG model.
+
+    Args:
+        sid_files: Path or list of paths to .sid files (generated with --sid-extension).
+        model_description_file: Path to YANG model description JSON (required for validation).
+
+    Example:
+        - ccm = CORECONFModel(sid_files=["module-1.sid", "module-2.sid"])
+        - ccm = CORECONFModel("module.sid", model_description_file="description.json")
+    """
 
     def __init__(self, 
                  sid_files: list[str] | str, 
@@ -55,10 +64,16 @@ class CORECONFModel(ModelSID):
             sid_files = [sid_files]
         super().__init__(sid_files)
 
-    def add_modules_path(self, path):
+    def add_modules_path(self, path: str | list[str]) -> None:
         """
-        Config / Add a path or list of paths to yang ietf modules location.
-        Required for configuration data validation.
+        Add a path or list of paths to YANG module dependencies.
+
+        Args:
+            path: Path string or list of paths to YANG IETF modules directory.
+
+        Example:
+            - model.add_modules_path("./yang_modules")
+            - model.add_modules_path(["./modules", "/usr/share/yang"])
         """
 
         if type(path) is str:
@@ -270,7 +285,16 @@ class CORECONFModel(ModelSID):
 
     def encode(self, config: dict) -> bytes:
         """
-        Encode a Python dictionary config into CORECONF.
+        Encode a Python dictionary config to CORECONF (CBOR).
+
+        Args:
+            config: Python dictionary with YANG identifier keys (e.g., "/example:greeting/message").
+
+        Returns:
+            CBOR-encoded bytes representing the CORECONF data.
+
+        Example:
+            - cbor_data = ccm.encode({"example:greeting/message": "Hello!"})
         """
 
         # "deepcopy" to not modify the input
@@ -283,7 +307,16 @@ class CORECONFModel(ModelSID):
     
     def encode_json(self, json_config: str) -> bytes:
         """
-        Encode a JSON-formatted string or .json file into CORECONF.
+        Encode a JSON string or file to CORECONF (CBOR).
+
+        Args:
+            json_config: JSON string or path to a .json file.
+
+        Returns:
+            CBOR-encoded bytes representing the CORECONF data.
+
+        Example:
+            - cbor_data = ccm.encode_json('{"example:greeting/message":"Hello!"}')
         """
 
         json_config = json_config.strip()
@@ -527,9 +560,19 @@ class CORECONFModel(ModelSID):
 
     def decode(self, data: bytes, as_rfc7951: bool = False) -> dict:
         """
-        Convert CORECONF (CBOR) data to Python dictionary.
-        as_rfc7951: If False, returns python native types,
-            If True, returns RFC7951-compliant data types.
+        Decode CORECONF (CBOR) data to a Python dictionary.
+
+        Args:
+            data: CBOR-encoded bytes.
+            as_rfc7951: If False (default), returns Python native types (int, float, bool).
+                        If True, returns RFC 7951-compliant types (e.g., int64 as string).
+
+        Returns:
+            Python dictionary with YANG identifier keys.
+
+        Example:
+            - cfg = ccm.decode(cbor_data)                   # native types
+            - cfg = ccm.decode(cbor_data, as_rfc7951=True)  # RFC 7951-compliant
         """
 
         data = cbor.loads(data)
@@ -540,7 +583,16 @@ class CORECONFModel(ModelSID):
 
     def decode_to_json(self, data: bytes) -> str:
         """
-        Convert CORECONF (CBOR) data to JSON-formatted string, following RFC 7951.
+        Decode CORECONF (CBOR) data to a JSON string (RFC 7951-compliant).
+
+        Args:
+            data: CBOR-encoded bytes.
+
+        Returns:
+            JSON string with RFC 7951-compliant data types.
+
+        Example:
+            - json_str = ccm.decode_to_json(cbor_data)
         """
 
         config = self.decode(data=data, as_rfc7951=True)
@@ -571,8 +623,18 @@ class CORECONFModel(ModelSID):
 
     def validate_json(self, json_config: str) -> None:
         """
-        Validate a JSON-string config against the data model (syntax, semantics).
-        Raises on validation error or misconfiguration.
+        Validate a JSON config string against the YANG data model.
+
+        Args:
+            json_config: JSON string to validate.
+
+        Raises:
+            RuntimeError: If model_description_file is not set.
+            ImportError: If yangson package is not installed.
+            ConfigValidationError: If validation fails.
+
+        Example:
+            - ccm.validate_json('{"example:greeting/message":"Hello!"}')
         """
 
         if self.model_description_file is None:
@@ -590,12 +652,18 @@ class CORECONFModel(ModelSID):
             self.yang_ietf_modules_paths
         )
         data = dm.from_raw(config)
-        data.validate()
+
+        try:
+            data.validate()
+        except Exception as e:
+            # Add context and preserve the original exception chain
+            raise ConfigValidationError(f"Config validation failed: {e}") from e
 
     def _validate_config(self, config):
         """
         Validate Python dictionary config against the model.
         Raises on validation error. No-op if validation is not configured.
+        > DEPRECATED: Use validate_json().
         """
 
         if self.model_description_file is None:
