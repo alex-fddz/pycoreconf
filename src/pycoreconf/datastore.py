@@ -526,7 +526,7 @@ class CORECONFDatastore:
                 current = current[part]
             current[path_parts[-1]] = value_copy
             
-            cbor_data = self.model.toCORECONF(json.dumps(wrapper))
+            cbor_data = self.model.encode_json(json.dumps(wrapper))
             cbor_dict = cbor.loads(cbor_data)
             
             current = cbor_dict
@@ -629,7 +629,7 @@ class CORECONFDatastore:
                     nav = nav[child_key]
 
             json_str = json.dumps(current_json)
-            cbor_data = self.model.toCORECONF(json_str)
+            cbor_data = self.model.encode_json(json_str)
             self.data = cbor.loads(cbor_data)
             return
         
@@ -706,7 +706,7 @@ class CORECONFDatastore:
     
     def to_json(self):
         """Export data as JSON string."""
-        return self.model.toJSON(self.to_cbor())
+        return self.model.decode_to_json(self.to_cbor())
 
     def __str__(self):
         """Return a human-friendly JSON representation for print(ds)."""
@@ -804,5 +804,5 @@ class CORECONFDatastore:
         
         # Re-export and reload
         json_str = json.dumps(current_json)
-        cbor_data = self.model.toCORECONF(json_str)
+        cbor_data = self.model.encode_json(json_str)
         self.data = cbor.loads(cbor_data)
