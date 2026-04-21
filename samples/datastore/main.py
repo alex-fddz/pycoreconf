@@ -143,7 +143,7 @@ def main():
     # Convert to CORECONF/CBOR
     print("\n[*] Converting to CORECONF/CBOR...")
     try:
-        cbor_data = ccm.toCORECONF(json_file)
+        cbor_data = ccm.encode_json(json_file)
         print("[+] Conversion successful")
         print(f"[+] CBOR hex: {cbor_data.hex()}")
         print(f"[+] CBOR size: {len(cbor_data)} bytes")
@@ -164,7 +164,7 @@ def main():
     # Try to decode back
     print("\n[*] Decoding CBOR back to JSON...")
     try:
-        decoded_json = ccm.toJSON(cbor_data, return_pydict=True)
+        decoded_json = ccm.decode(cbor_data)
         print("[+] Decoding successful")
         print("\n[*] Decoded JSON configuration:")
         print("-" * 70)

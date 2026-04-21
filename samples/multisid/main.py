@@ -17,12 +17,12 @@ ccm = pycoreconf.CORECONFModel(
 config_file = "schc.json"
 
 # Convert configuration to CORECONF/CBOR
-cbor_data = ccm.toCORECONF(config_file) 
+cbor_data = ccm.encode_json(config_file) 
 print(f"Encoded CBOR data (CORECONF payload) = {cbor_data.hex()}" \
     f" ({len(cbor_data)})")
 
 # Decode CBOR data back to JSON configuration data
-decoded_json = ccm.toJSON(cbor_data)
+decoded_json = ccm.decode_to_json(cbor_data)
 # print("\nDecoded config data =", decoded_json, "\n")
 
 # Test
