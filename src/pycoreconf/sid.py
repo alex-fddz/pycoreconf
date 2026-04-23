@@ -2,7 +2,19 @@ import json
 
 class ModelSID:
     """
-    Class to define methods for reading a YANG model SID file and hold values.
+    Base class for loading and indexing YANG model SID files.
+
+    Holds the SID mapping tables required for CORECONF conversion.
+
+    Attributes:
+        sid_files: List of paths to .sid files.
+        sids: Mapping of YANG identifier to SID value.
+        types: Mapping of YANG identifier to data type.
+        ids: Inverse mapping of SID value to identifier.
+        key_mapping: Mapping of list SIDs to their key component SIDs.
+
+    Example:
+        - model = ModelSID(["module-1.sid", "module-2.sid"])
     """
 
     def __init__(self, sid_files: list[str]):
@@ -12,7 +24,17 @@ class ModelSID:
 
     def _parse_sid_file(self, sid_filename: str) -> tuple:
         """
-        Internal helper: load a SID file and return a tuple of (module_name, list_of_items, key_mapping).
+        Parse a single SID file.
+
+        Args:
+            sid_filename: Path to the .sid file.
+
+        Returns:
+            Tuple of (module_name: str, items: list, key_mapping: dict).
+
+        Raises:
+            FileNotFoundError: If the SID file does not exist.
+            JSONDecodeError: If the file is not valid JSON.
         """
 
         with open(sid_filename, "r") as f:
@@ -37,8 +59,15 @@ class ModelSID:
 
     def _collect_sid_data(self) -> tuple:
         """
-        Aggregate SID data from loaded SID files,
-        building the identifier:SID, identifier:type, and key-mapping tables.
+        Aggregate SID mappings from all loaded SID files.
+
+        Builds the following tables:
+            - sids: {identifier: sid_value} for all data nodes
+            - types: {identifier: yang_type} for typed nodes
+            - key_mapping: {list_sid: [key_sid, ...]} for list key resolution
+
+        Returns:
+            Tuple of (sids: dict, types: dict, key_mapping: dict).
         """
 
         # Initialize mapping tables
