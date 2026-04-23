@@ -193,7 +193,7 @@ def main():
 
     # Load CBOR data into datastore
     print("\n[*] Loading CBOR data into datastore...")
-    ds = ccm.create_datastore(cbor_data)
+    ds = ccm.create_datastore_from_cbor(cbor_data)
     print("[+] Datastore loaded")
 
     # Test retrieving list keys for all transducer entries

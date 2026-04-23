@@ -681,19 +681,71 @@ class CORECONFModel(ModelSID):
         data = dm.from_raw(config)
         data.validate()
 
-    def create_datastore(self, cbor_data = cbor.dumps({})):
+    def create_datastore(self, data: dict = None):
         """
-        Load CBOR data into a high-level datastore interface.
-        
+        Load an identifier-keyed dict into a high-level datastore interface.
+
         Args:
-            cbor_data: CBOR-encoded data (bytes)
-        
+            data: Python dictionary with YANG identifier keys (e.g., {"example:greeting/message": "Hello!"})
+                  If None, creates an empty datastore.
+
         Returns:
             CORECONFDatastore instance for easy navigation and modification
-        
+
         Example:
-            ds = model.create_datastore(cbor_data)
+            ds = model.create_datastore({"example:greeting/message": "Hello!"})
             value = ds["/measurements/measurement[type='solar-radiation'][id='0']/value"]
             ds["/measurements/measurement[type='solar-radiation'][id='0']/value"] = 42
         """
-        return CORECONFDatastore(self, cbor_data)
+
+        if data is None:
+            data = {}
+
+        # "deepcopy" to not modify the input
+        data_cpy = json.loads(json.dumps(data))
+
+        sid_tree = self._identifier_to_sid_tree(data_cpy)
+
+        return CORECONFDatastore(self, sid_tree)
+
+    def create_datastore_from_cbor(self, cbor_data: bytes):
+        """
+        Load CBOR data into a high-level datastore interface.
+
+        Args:
+            cbor_data: CBOR-encoded bytes (already in CORECONF/SID-keyed format)
+
+        Returns:
+            CORECONFDatastore instance for easy navigation and modification
+
+        Example:
+            ds = model.create_datastore_from_cbor(cbor_data)
+            value = ds["/measurements/measurement[type='solar-radiation'][id='0']/value"]
+        """
+
+        sid_tree = cbor.loads(cbor_data)
+        return CORECONFDatastore(self, sid_tree)
+
+    def create_datastore_from_json(self, json_config: str):
+        """
+        Load JSON data into a high-level datastore interface.
+
+        Args:
+            json_config: JSON string or path to a .json file with YANG identifier keys.
+
+        Returns:
+            CORECONFDatastore instance for easy navigation and modification
+
+        Example:
+            ds = model.create_datastore_from_json('{"example:greeting/message":"Hello!"}')
+            ds = model.create_datastore_from_json("config.json")
+        """
+
+        json_config = json_config.strip()
+        try:
+            config = json.loads(json_config)
+        except ValueError:
+            with open(json_config, 'r') as f:
+                config = json.load(f)
+
+        return self.create_datastore(config)

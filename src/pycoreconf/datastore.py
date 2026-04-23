@@ -15,22 +15,21 @@ class CORECONFDatastore:
     Usage: ds["/measurements/measurement[type='solar-radiation'][id='0']/value"]
     """
     
-    def __init__(self, model: "CORECONFModel", cbor_data: bytes = None):
+    def __init__(self, model: "CORECONFModel", data: dict):
         """
-        Initialize datastore from CORECONF model and CBOR data.
+        Initialize datastore from CORECONF model and SID-keyed dict.
 
         Args:
-            model: CORECONFModel instance
-            cbor_data: CBOR-encoded data (bytes)
+            model: CORECONFModel instance.
+            data: SID-keyed dictionary.
         """
+
         self.model = model
-        self.data = cbor.loads(cbor_data) if isinstance(cbor_data, bytes) else cbor_data
 
         # Normalize: wrap absolute SID keys into their ancestor chain using delta encoding.
         # A device may respond with {100063: [...]} (absolute SID of a nested node),
         # but the datastore expects a rooted delta tree, e.g. {100062: {1: [...]}}.
-        if isinstance(self.data, dict):
-            self.data = self._normalize_absolute_sids(self.data)
+        self.data = self._normalize_absolute_sids(data)
 
     def _normalize_absolute_sids(self, flat_data):
         """

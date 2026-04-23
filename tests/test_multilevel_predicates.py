@@ -46,7 +46,7 @@ class TestXPathPredicates(unittest.TestCase):
             "3e05191616a518211a000186aa010018226764656772656573110012a20b1835"
             "01a604182201185202182403184306185f0519185e"
         )
-        cls.ds = cls.ccm.create_datastore(cbor_data)
+        cls.ds = cls.ccm.create_datastore_from_cbor(cbor_data)
 
     def test_transducers_path_exists_and_type(self):
         # Ensure /transducers exists and is list or dict
