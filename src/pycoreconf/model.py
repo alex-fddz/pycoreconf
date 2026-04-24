@@ -83,6 +83,14 @@ class CORECONFModel(ModelSID):
         else:
             raise TypeError("Can only add path string or list of paths.")
 
+    def _load_json_input(self, json_input):
+        """Handle JSON string or file path input."""
+        if json_input.strip().endswith(".json"):
+            with open(json_input, 'r') as f:
+                return json.load(f)
+        else:
+            return json.loads(json_input)
+
     def _convert_leaf_value(self, leaf, dtype, to_cbor, use_native_types=True):
         """
         Convert a leaf value between model (Python/JSON) and CBOR representations
@@ -319,14 +327,7 @@ class CORECONFModel(ModelSID):
             - cbor_data = ccm.encode_json('{"example:greeting/message":"Hello!"}')
         """
 
-        json_config = json_config.strip()
-        try:
-            # Parse the JSON string
-            config = json.loads(json_config)
-        except ValueError:
-            # Load the JSON file
-            with open(json_config, 'r') as f:
-                config = json.load(f)
+        config = self._load_json_input(json_config)
 
         return self.encode(config)
 
@@ -741,11 +742,6 @@ class CORECONFModel(ModelSID):
             ds = model.create_datastore_from_json("config.json")
         """
 
-        json_config = json_config.strip()
-        try:
-            config = json.loads(json_config)
-        except ValueError:
-            with open(json_config, 'r') as f:
-                config = json.load(f)
+        config = self._load_json_input(json_config)
 
         return self.create_datastore(config)

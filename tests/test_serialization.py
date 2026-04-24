@@ -85,6 +85,14 @@ class TestSerialization(unittest.TestCase):
         self.assertEqual(original, parsed)
         self.assertEqual(config, json_str)
     
+    def test_encode_json_invalid_json_raises(self):
+        """Test encode_json with invalid JSON string."""
+        ccm = self.make_ccm("samples/basic/example-1.sid")
+        with self.assertRaises(json.decoder.JSONDecodeError):
+            ccm.encode_json("{invalid")
+        with self.assertRaises(FileNotFoundError):
+            ccm.encode_json("not-here.json")
+
     def test_multifile_serialization_roundtrip(self):
         """Test encode/decode with multiple SID files - roundtrip to same data."""
         sids = [
