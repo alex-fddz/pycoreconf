@@ -624,10 +624,10 @@ class CORECONFModel(ModelSID):
 
     def validate_json(self, json_config: str) -> None:
         """
-        Validate a JSON config string against the YANG data model.
+        Validate a JSON config string or file against the YANG data model.
 
         Args:
-            json_config: JSON string to validate.
+            json_config: JSON string or path to file to validate.
 
         Raises:
             RuntimeError: If model_description_file is not set.
@@ -646,7 +646,7 @@ class CORECONFModel(ModelSID):
         except ImportError:
             raise ImportError("Validation requires 'yangson' package.")
 
-        config = json.loads(json_config)
+        config = self._load_json_input(json_config)
 
         dm = DataModel.from_file(
             self.model_description_file,
