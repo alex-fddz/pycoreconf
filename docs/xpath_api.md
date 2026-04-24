@@ -29,7 +29,7 @@ model = pycoreconf.CORECONFModel("/path/to/your/model.sid")
 with open("data.cbor", "rb") as f:
     cbor_data = f.read()
 
-ds = model.create_datastore(cbor_data)
+ds = model.create_datastore_from_cbor(cbor_data)
 ```
 
 ---
@@ -257,7 +257,7 @@ model = pycoreconf.CORECONFModel("/path/to/model.sid")
 
 # 2. Load data
 with open("data.cbor", "rb") as f:
-    ds = model.create_datastore(f.read())
+    ds = model.create_datastore_from_cbor(f.read())
 
 # 3. Read a value
 old_value = ds["/measurements/measurement[type='temp'][id='0']/value"]

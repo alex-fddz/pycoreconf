@@ -62,121 +62,71 @@ pip uninstall pycoreconf
     - A YANG data model description JSON file (see `samples/validation/description.json`).
     - Validation dependency install (`pycoreconf[validation]`).
 
-## API and Usage
+## Quick Start
 
-Import the module with:
-
-```
+```python
 import pycoreconf
+
+# Create model with SID file(s)
+ccm = pycoreconf.CORECONFModel("model.sid")
+
+# Encode Python dict to CORECONF (CBOR)
+cbor_data = ccm.encode({"example:greeting/message": "Hello!"})
+
+# Decode CORECONF back to Python dict
+config = ccm.decode(cbor_data)
+
+# Or work with JSON directly
+cbor_data = ccm.encode_json('{"example:greeting/message":"Hello!"}')
+json_str = ccm.decode_to_json(cbor_data)
+
+# High-level datastore API
+ds = ccm.create_datastore({"example:greeting/message": "Hello!"})
+ds["/example:greeting/message"] = "World"
+cbor_data = ds.to_cbor()
 ```
 
-### `ccm = pycoreconf.CORECONFModel(sid_files, model_description_file=None)`
+## API Reference
 
-Create a CORECONF Model object with an associated YANG SID file.
+### `pycoreconf.CORECONFModel(sid_files, model_description_file=None)`
 
-- `sid_files`: A single path string or a list of path strings to one or more .sid files. Generate using [ltn22/pyang](https://github.com/ltn22/pyang/) module.
-- `model_description_file`: Optional model description file used for config validation.
+Creates a CORECONF model object from SID file(s). Core model object for all CORECONF data operations.
 
-### `ccm.add_modules_path(ietf_modules_loc)`
+- `sid_files`: Path string or list of paths to .sid files.
+- `model_description_file`: Optional path to YANG model description JSON for config validation.
 
-- `ietf_modules_loc`: Path or list of paths where IETF and other modules used in the YANG model may be found.
+### Encoding
 
-Returns nothing. Required for decoded configuration data validation.
+- `encode(config: dict) -> bytes` - Encode a Python dict to CORECONF (CBOR).
+- `encode_json(json_config: str) -> bytes` - Encode a JSON string or .json file path to CORECONF.
 
-### `ccm.toCORECONF(config)` 
+### Decoding
 
-- `config`: Configuration data as a dict, JSON string, or path to a .json file.
+- `decode(cbor_data: bytes, as_rfc7951: bool = False) -> dict` - Decode CORECONF to Python dict.
+- `decode_to_json(cbor_data: bytes) -> str` - Decode CORECONF to JSON string (RFC 7951 compliant).
 
-Returns (CBOR encoded) CORECONF configuration data. Validates config data if a model description file has been provided.
+### Validation
 
-### `ccm.toJSON(cbor_data, return_pydict=False)`
+- `validate_json(json_config: str)` - Validate a JSON config against the YANG model. Takes an RFC 7951 compliant JSON string or a path to a .json file. Requires `model_description_file` to be set and `pycoreconf[validation]` to be installed. Raises on invalid data.
 
-- `cbor_data`: (CBOR encoded) CORECONF configuration data.
-- `return_pydict`: Return data as a Python dictionary instead (useful if doing further processing or conversions to other formats)
+### Datastores
 
-Returns decoded configuration data as a JSON string (or Python dictionary). Validates config data if a model description file has been provided.
+These methods return a `CORECONFDatastore` instance. See below for usage.
 
-### `ds = ccm.create_datastore(cbor_data=None)`
+- `create_datastore(data: dict = None)` - Create datastore from dict.
+- `create_datastore_from_json(json_config: str)` - Create datastore from JSON.
+- `create_datastore_from_cbor(cbor_data: bytes)` - Create datastore from CBOR.
 
-Create a `CORECONFDatastore` object tied to this model, for high-level manipulation of configuration data using XPath-like paths.
+### `CORECONFDatastore`
 
-- `cbor_data`: CBOR-encoded configuration data. If not provided, an empty datastore is created.
+Uses a simplified XPath-like syntax with predicates (`[key='value']`) for list entries.
+Supports standard Python operations (=, +=, del).
+See [docs/xpath_api.md](./docs/xpath_api.md) and [docs/xpath_api_examples.py](./docs/xpath_api_examples.py) for more information.
 
-Returns a `CORECONFDatastore` instance.
-
-### `ds[path]`
-
-Access or modify configuration data using XPath-like syntax.
-
-- `path`: String representing a path in the YANG data tree (e.g. "/container/list[key='value']/leaf")
-
-Returns the value at the given path when reading.
-
-#### Notes
-
-- Uses a simplified XPath-like syntax (not full XML XPath)
-- Predicates (`[key='value']`) are used to identify list entries
-- Writing to a non-existent path **automatically creates** missing nodes
-- Supports standard Python operations (`=`, `+=`, `del`, etc.)
-- Refer to `docs/xpath_api.md` and `docs/xpath_api_examples.py` for more information.
-
-#### Examples
-
-```
-# Read a value
-value = ds["/measurements/measurement[type='temp'][id='0']/value"]
-
-# Write a value
-ds["/measurements/measurement[type='temp'][id='0']/value"] = 42
-
-# Create entries (auto-created if missing)
-ds["/measurements/measurement[type='humidity'][id='1']/value"] = 80
-
-# Delete a value or entry
-del ds["/measurements/measurement[type='temp'][id='0']"]
-```
-
-### `ds.predicates(path)`
-
-Retrieve list entry key predicates for a given list path.
-
-- `path`: XPath-like string pointing to a list node
-
-Returns a list of predicate strings identifying existing entries.
-
-### `ds.to_cbor()`
-
-Export the current datastore state to CBOR-encoded CORECONF data.
-
-Returns CBOR bytes.
-
-### `ds.to_json()`
-
-Export the current datastore state to a JSON string.
-
-Returns a JSON string representation of the data.
-
-### Other methods
-
-### `ccm.validateConfig(config_data)`
-
-Validates input configuration data according to the YANG data model(s). A model description file must be provided. Runs automatically during encoding/decoding.
-
-- `config_data`: Python dictionary holding configuration data.
-
-Returns `True` if data is valid. Raises on invalid data, or returns `False` if model description file was not provided.
-
-### `ccm.lookupSID(config_pydict)`
-
-- `config_pydict`: Python dictionary holding configuration data.
-
-Returns a python dictionary with configuration keys/leaves substituted by their corresponding SID delta values.
-
-### `ccm.lookupIdentifier(config_pydict)`
-
-- `config_pydict`: Python dictionary holding configuration data, with SID delta values as keys.
-
-Returns a python dictionary with SID delta keys substituted by their corresponding leaf identifiers.
+- `ds[path]` - Get/set values using XPath-like paths (e.g. `/container/list[key='value']/leaf`).
+- `ds.predicates(path)` - Get list entry key predicates.
+- `ds.to_cbor()` - Export to CBOR.
+- `ds.to_json()` - Export to JSON string.
 
 ## Tests
 
