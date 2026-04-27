@@ -1,4 +1,8 @@
 import json
+import warnings
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class ModelSID:
     """
@@ -43,8 +47,12 @@ class ModelSID:
         if len(obj) == 1 and list(obj.keys())[0].endswith("sid-file"):
             sid_data = list(obj.values())[0]  # RFC‑9595 standard container
         else:
-            print(f"Warning: legacy/non-standard SID file loaded ({sid_filename}). Some features may not work properly.")
-            sid_data = obj  # legacy/non-standard format
+            warnings.warn(
+                f"Legacy or non-standard SID file detected ({sid_filename}). "
+                "Regenerate it using the latest ltn22/pyang.",
+                stacklevel=2
+            )
+            sid_data = obj
 
         items = sid_data.get("item") or sid_data.get("items", [])
         module_name = sid_data.get("module-name", "unknown")
@@ -52,8 +60,11 @@ class ModelSID:
 
         if key_mapping is None:
             key_mapping = {}
-            print(f"Warning: {sid_filename} has not been generated with the --sid-extension option.\n" \
-                + "Some conversion capabilities may not work. See http://github.com/ltn22/pyang")
+            warnings.warn(
+                f"{sid_filename} does not contain SID extensions. "
+                "Regenerate it using ltn22/pyang with the --sid-extension option.",
+                stacklevel=2
+            )
 
         return module_name, items, key_mapping
 
@@ -78,6 +89,7 @@ class ModelSID:
         for sid_filename in self.sid_files:
             
             # Read the contents of the sid files
+            _logger.debug("Loading SID file: %s", sid_filename)
             module_name, items, km = self._parse_sid_file(sid_filename)
 
             for item in items:
@@ -95,5 +107,15 @@ class ModelSID:
 
             # Save module name & ranges = {'module-name': [(start, end)], ...} ?
             # ranges[obj["module-name"]] = _parse_assignment_ranges(obj)
+
+            _logger.debug(
+                "Parsed SID module '%s': items=%d, typed-leaves=%d, key-mappings=%d",
+                module_name, len(items), len(types), len(km)
+            )
+
+        _logger.info(
+            "Collected SID data: %d module(s), %d sids, %d typed leaves, %d key mappings",
+            len(self.sid_files), len(sids), len(types), len(key_mapping)
+        )
             
         return sids, types, key_mapping

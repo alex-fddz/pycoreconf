@@ -5,6 +5,9 @@ from .datastore import CORECONFDatastore
 import json
 import base64
 import cbor2 as cbor
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class ConfigValidationError(Exception):
@@ -85,10 +88,13 @@ class CORECONFModel(ModelSID):
 
     def _load_json_input(self, json_input):
         """Handle JSON string or file path input."""
+
         if json_input.strip().endswith(".json"):
+            _logger.debug("Handling JSON input '%s' as a file path", json_input)
             with open(json_input, 'r') as f:
                 return json.load(f)
         else:
+            _logger.debug("Handling JSON input as content (length=%d)", len(json_input))
             return json.loads(json_input)
 
     def _convert_leaf_value(self, leaf, dtype, to_cbor, use_native_types=True):
@@ -125,11 +131,14 @@ class CORECONFModel(ModelSID):
             if leaf.tag == IDENTITYREF_CBOR_TAG_VALUE:
                 return self.ids[leaf.value]
             if leaf.tag == INSTANCE_IDENTIFIER_CBOR_TAG_VALUE:
+                _logger.debug("Decoding CBOR tag %d value (%d) without handling", leaf.tag, leaf.value)
                 return leaf.value # ?
             if leaf.tag == SID_CBOR_TAG_VALUE:
+                _logger.debug("Decoding CBOR tag %d value (%d) without handling", leaf.tag, leaf.value)
                 return leaf.value # ?
             else:
-                print(f"[X] Unexpected CBOR Tag {leaf.tag}.")
+                _logger.warning("Unexpected CBOR tag %d during decoding; returning value as-is.", leaf.tag)
+                return leaf.value
 
         elif type(dtype) is str:
             if dtype == "string":
@@ -158,16 +167,15 @@ class CORECONFModel(ModelSID):
                     return enc.decode()
             elif dtype == "boolean":
                 # ret = True if obj == "true" else False
+                _logger.debug("Handling boolean type as bool(leaf)")
                 return bool(leaf)
             elif dtype == "inet:uri":
                 return str(leaf)
             elif dtype == "identityref": # sid <-> 'module:identity'
                 return self.sids[leaf] if to_cbor else self.ids[leaf]
             elif dtype in ["empty", "leafref", "instance-identifier", "bits"]: # just return obj
-                print(f"[-] Data type {dtype} found: Returning as is." )
+                _logger.warning("Data type %s not yet handled; returning value as-is.", dtype)
                 return leaf
-            else:
-                print("[X] Unrecognized obj type:", dtype, ". Returning as is.")
 
         elif type(dtype) is dict: # enumeration ({"value":"name"})
             if to_cbor: # inverse dict, w value as int
@@ -175,12 +183,11 @@ class CORECONFModel(ModelSID):
             return dtype[str(leaf)]
 
         elif type(dtype) is list: # union
-            # print(f"[-] Union: Finding subtype.. | {'to cbor' if to_cbor else 'to model'} | {dtype} | {obj}")
+            _logger.debug("Resolving union type (to_cbor=%s, value=%r, candidates=%s)", to_cbor, leaf, dtype)
             for sub_dtype in dtype:
                 try:
-                    # print("  > trying subtype", sub_dtype)
                     val = self._convert_leaf_value(leaf, sub_dtype, to_cbor, use_native_types)
-                    # print("  > OK")
+                    _logger.debug("Matched union subtype %s", sub_dtype)
 
                     # Special cases - RFC 9254 Section 6.12
                     if to_cbor:
@@ -198,6 +205,7 @@ class CORECONFModel(ModelSID):
                 except Exception:
                     continue
 
+            _logger.warning("No matching subtype found for union %s (value=%s); returning value as-is.", dtype, leaf)
             return leaf # fallback
 
         # RFC 7951: Fallback for Decimal objects (e.g., from unrecognized typedefs)
@@ -205,8 +213,10 @@ class CORECONFModel(ModelSID):
         if not to_cbor and not use_native_types:
             from decimal import Decimal
             if isinstance(leaf, Decimal):
+                _logger.debug("Converting Decimal to string for JSON compatibility (value=%r)", leaf)
                 return str(leaf)
 
+        _logger.warning("Unrecognized type: %s; returning value as-is.", dtype)
         return leaf # fallback
 
     def _identifier_to_sid_tree_recursive(self, obj, path="/", parent_sid=0):
@@ -260,6 +270,8 @@ class CORECONFModel(ModelSID):
             SID-keyed tree.
         """
 
+        _logger.debug("Using iterative identifier-tree to SID-tree conversion")
+
         stack = [(_ValueWrapper(obj), path, parent_sid)]
 
         while stack:
@@ -305,13 +317,18 @@ class CORECONFModel(ModelSID):
             - cbor_data = ccm.encode({"example:greeting/message": "Hello!"})
         """
 
+        _logger.debug("Encoding config (keys=%d)", len(config))
+
         # "deepcopy" to not modify the input
         config_cpy = json.loads(json.dumps(config))
 
         # Transform to CORECONF
-        cc = self._identifier_to_sid_tree(config_cpy)
+        sid_tree = self._identifier_to_sid_tree(config_cpy)
+        cbor_data = cbor.dumps(sid_tree)
 
-        return cbor.dumps(cc)
+        _logger.debug("Encoding complete (bytes=%d)", len(cbor_data))
+
+        return cbor_data
     
     def encode_json(self, json_config: str) -> bytes:
         """
@@ -417,6 +434,8 @@ class CORECONFModel(ModelSID):
         Returns:
             Identifier-keyed tree.
         """
+
+        _logger.debug("Using iterative SID-tree to identifier-tree conversion")
 
         stack = [(_ValueWrapper(obj), sid_delta, path)]
 
@@ -557,7 +576,17 @@ class CORECONFModel(ModelSID):
 
             return None
 
-        return _walk(obj, delta, path, keys)
+        _logger.debug(
+            "Executing SID query (sid=%s, keys=%s, update=%s, depth=%s)",
+            sid, keys, value is not None, depth
+        )
+
+        result = _walk(obj, delta, path, keys)
+
+        if result is None:
+            _logger.debug("SID query returned no result (sid=%s, keys=%s)", sid, keys)
+
+        return result
 
     def decode(self, data: bytes, as_rfc7951: bool = False) -> dict:
         """
@@ -576,10 +605,13 @@ class CORECONFModel(ModelSID):
             - cfg = ccm.decode(cbor_data, as_rfc7951=True)  # RFC 7951-compliant
         """
 
+        _logger.debug("Decoding CBOR data (bytes=%d)", len(data))
+
         data = cbor.loads(data)
         config = self._sid_to_identifier_tree(data, use_native_types=(not as_rfc7951))
 
-        # Return Python dict object
+        _logger.debug("Decoding complete (as_rfc7951=%s, keys=%d)", as_rfc7951, len(config))
+
         return config
 
     def decode_to_json(self, data: bytes) -> str:
@@ -656,6 +688,7 @@ class CORECONFModel(ModelSID):
 
         try:
             data.validate()
+            _logger.info("Config validation passed")
         except Exception as e:
             # Add context and preserve the original exception chain
             raise ConfigValidationError(f"Config validation failed: {e}") from e
@@ -725,6 +758,7 @@ class CORECONFModel(ModelSID):
         """
 
         sid_tree = cbor.loads(cbor_data)
+
         return CORECONFDatastore(self, sid_tree)
 
     def create_datastore_from_json(self, json_config: str):

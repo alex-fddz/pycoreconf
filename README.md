@@ -128,6 +128,19 @@ See [docs/xpath_api.md](./docs/xpath_api.md) and [docs/xpath_api_examples.py](./
 - `ds.to_cbor()` - Export to CBOR.
 - `ds.to_json()` - Export to JSON string.
 
+## Logging
+
+Pycoreconf uses the logger name `pycoreconf` (Python's standard `logging` module).
+
+To see log output, configure logging in your application:
+
+```python
+import logging
+
+logging.basicConfig(level=logging.WARNING)
+logging.getLogger('pycoreconf').setLevel(logging.DEBUG)
+```
+
 ## Tests
 
 ```

@@ -1,5 +1,8 @@
 import json
 import cbor2 as cbor
+import re
+import copy
+import logging
 
 try:
     from typing import TYPE_CHECKING
@@ -8,6 +11,8 @@ except Exception:
 
 if TYPE_CHECKING:
     from .model import CORECONFModel
+
+_logger = logging.getLogger(__name__)
 
 class CORECONFDatastore:
     """
@@ -30,6 +35,8 @@ class CORECONFDatastore:
         # A device may respond with {100063: [...]} (absolute SID of a nested node),
         # but the datastore expects a rooted delta tree, e.g. {100062: {1: [...]}}.
         self.data = self._normalize_absolute_sids(data)
+
+        _logger.debug("Datastore initialized (keys=%d)", len(self.data))
 
     def _normalize_absolute_sids(self, flat_data):
         """
@@ -94,7 +101,6 @@ class CORECONFDatastore:
             List of (segment_name, predicates_dict) tuples
             Example: [('measurements', {}), ('measurement', {'type': 'solar-radiation', 'id': '0'}), ('value', {})]
         """
-        import re
         
         # Remove leading slash
         xpath = xpath.lstrip('/')
@@ -418,12 +424,14 @@ class CORECONFDatastore:
         Example: ds["/measurements/measurement[type='solar-radiation'][id='0']/value"]
         Returns values with YANG identifiers instead of SIDs, or None if not found.
         """
-        import copy
+
+        _logger.debug("Datastore get: %s", xpath)
 
         # Resolve the path — return None if the path does not exist in the model
         try:
             target_sid, keys = self._resolve_path(xpath)
         except (KeyError, ValueError):
+            _logger.debug("Datastore get: path resolution failed (%s)", xpath)
             return None
         target_path = self.model.ids.get(target_sid, '')
         
@@ -440,6 +448,7 @@ class CORECONFDatastore:
             if parent_sid:
                 result = self.model._execute_sid_query(self.data, sid=parent_sid, keys=keys)
                 if result is None:
+                    _logger.debug("Datastore get: no data found for SID (xpath=%s, sid=%s)", xpath, target_sid)
                     return None
 
                 value = result[parent_sid]
@@ -498,8 +507,8 @@ class CORECONFDatastore:
         Ex: ds["/measurements/measurement[type='solar-radiation'][id='1']/precision"] = 3
             - Creates the list entry if needed
         """
-        import copy
-        import json
+
+        _logger.debug("Datastore set: %s = %r", xpath, value)
         
         segments = self._parse_xpath(xpath)
         
@@ -554,6 +563,7 @@ class CORECONFDatastore:
         result = self.model._execute_sid_query(self.data, sid=target_sid, keys=keys, value=cbor_value)
         
         if result is None:
+            _logger.debug("Datastore set: path not found, materializing structure (%s)", xpath)
             # Materialize missing path parts in JSON (containers + list entries).
             # This allows creation from an empty datastore and nested list predicates.
             current_json = json.loads(self.to_json())
@@ -698,13 +708,15 @@ class CORECONFDatastore:
                 answer.append(_format_predicates_from_values(values))
 
         return answer
-    
+
     def to_cbor(self):
         """Export modified data back to CBOR."""
+        _logger.debug("Exporting to CBOR (bytes=%d)", len(self.data))
         return cbor.dumps(self.data)
-    
+
     def to_json(self):
         """Export data as JSON string."""
+        _logger.debug("Exporting to JSON")
         return self.model.decode_to_json(self.to_cbor())
 
     def __str__(self):
@@ -724,8 +736,9 @@ class CORECONFDatastore:
         Example: del ds["/measurements/measurement[type='solar-radiation'][id='1']"]
                  del ds["/measurements/measurement[type='solar-radiation'][id='1']/precision"]
         """
-        import json
-        
+
+        _logger.debug("Datastore delete: %s", xpath)
+
         segments = self._parse_xpath(xpath)
         
         # Check if this is a list item deletion (has predicates)
@@ -805,3 +818,4 @@ class CORECONFDatastore:
         json_str = json.dumps(current_json)
         cbor_data = self.model.encode_json(json_str)
         self.data = cbor.loads(cbor_data)
+        _logger.debug("Datastore delete completed: %s", xpath)
