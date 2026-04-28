@@ -6,6 +6,7 @@ import json
 import base64
 import cbor2 as cbor
 import logging
+import warnings
 
 _logger = logging.getLogger(__name__)
 
@@ -354,6 +355,12 @@ class CORECONFModel(ModelSID):
         > DEPRECATED: Use encode() or encode_json().
         """
 
+        warnings.warn(
+            "toCORECONF() is deprecated. Use encode() or encode_json() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         # Work with a python dict
         if isinstance(config, dict):
             # "deepcopy"
@@ -639,6 +646,12 @@ class CORECONFModel(ModelSID):
         > DEPRECATED: Use decode() or decode_to_json().
         """
 
+        warnings.warn(
+            "toJSON() is deprecated. Use decode() or decode_to_json() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         data = cbor.loads(cbor_data)
         pyd = self._sid_to_identifier_tree(data, use_native_types=return_pydict)
 
@@ -699,6 +712,12 @@ class CORECONFModel(ModelSID):
         Raises on validation error. No-op if validation is not configured.
         > DEPRECATED: Use validate_json().
         """
+
+        warnings.warn(
+            "_validate_config() is deprecated. Validation is now explicit; use validate_json().",
+            DeprecationWarning,
+            stacklevel=3,
+        )
 
         if self.model_description_file is None:
             return  # no validation configured
