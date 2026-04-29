@@ -468,7 +468,7 @@ def main():
         xpath_in = "/transducers/transducer[type='coreconf-m2m:solar-radiation'][id='0']/quantity/statistics/sample-count"
         print(f"[*] Input XPath : {xpath_in}")
 
-        target_sid, keys = ds._resolve_path(xpath_in)
+        target_sid, keys = ds._resolve_xpath(xpath_in)
         print(f"[+] _resolve_path → sid={target_sid}, keys={keys}")
 
         xpath_out = ds._create_xpath(target_sid, keys=keys)

@@ -33,7 +33,7 @@ class TestGetKeys(unittest.TestCase):
     def test_enum_key_is_converted_both_directions(self):
         ds = CORECONFDatastore(_DummyEnumKeyModel(), {})
 
-        sid, keys = ds._resolve_path("/root/list[mode='delta'][id='7']")
+        sid, keys = ds._resolve_xpath("/root/list[mode='delta'][id='7']")
         self.assertEqual(sid, 110)
         self.assertEqual(keys, [1, 7])
 

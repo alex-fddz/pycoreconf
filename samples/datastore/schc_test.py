@@ -35,12 +35,12 @@ def main():
     print("\n--- _resolve_path examples ---")
 
     xpath1 = "/schc/rule[rule-id-value='11'][rule-id-length='3']/entry[entry-index='1']/field-id"
-    sid1, keys1 = ds._resolve_path(xpath1)
+    sid1, keys1 = ds._resolve_xpath(xpath1)
     print(f"xpath : {xpath1}")
     print(f"  → sid={sid1}, keys={keys1}")
 
     xpath2 = "/schc/rule[rule-id-value='10'][rule-id-length='3']"
-    sid2, keys2 = ds._resolve_path(xpath2)
+    sid2, keys2 = ds._resolve_xpath(xpath2)
     print(f"xpath : {xpath2}")
     print(f"  → sid={sid2}, keys={keys2}")
 
@@ -58,7 +58,7 @@ def main():
     # --- round-trip check ---
     print("\n--- round-trip ---")
     for xpath_in in [xpath1, xpath2]:
-        sid, keys = ds._resolve_path(xpath_in)
+        sid, keys = ds._resolve_xpath(xpath_in)
         xpath_out = ds._create_xpath(sid, keys=keys)
         status = "OK" if xpath_in == xpath_out else "DIFFER"
         print(f"[{status}] {xpath_in}")

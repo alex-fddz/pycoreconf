@@ -151,9 +151,9 @@ class TestCreateXpathRoundTrip(unittest.TestCase):
         cls.ds = cls.model.create_datastore()
 
     def _assert_roundtrip(self, xpath):
-        sid, keys = self.ds._resolve_path(xpath)
+        sid, keys = self.ds._resolve_xpath(xpath)
         rebuilt = self.ds._create_xpath(sid, keys=keys)
-        sid2, keys2 = self.ds._resolve_path(rebuilt)
+        sid2, keys2 = self.ds._resolve_xpath(rebuilt)
         self.assertEqual(sid, sid2, f"SID mismatch for xpath: {xpath!r}")
         self.assertEqual(keys, keys2, f"Keys mismatch for xpath: {xpath!r}")
 

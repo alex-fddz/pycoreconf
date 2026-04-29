@@ -52,7 +52,7 @@ class CORECONFDatastore:
 
         # Resolve the path — return None if the path does not exist in the model
         try:
-            target_sid, keys = self._resolve_path(xpath)
+            target_sid, keys = self._resolve_xpath(xpath)
         except (KeyError, ValueError):
             _logger.debug("Datastore get: path resolution failed (%s)", xpath)
             return None
@@ -136,7 +136,7 @@ class CORECONFDatastore:
         segments = self._parse_xpath(xpath)
         
         try:
-            target_sid, keys = self._resolve_path(xpath)
+            target_sid, keys = self._resolve_xpath(xpath)
         except KeyError:
             # Path resolution failed - will be handled below if creation is needed
             target_sid = None
@@ -367,7 +367,7 @@ class CORECONFDatastore:
         as a single-item list.
         """
         try:
-            target_sid, keys = self._resolve_path(xpath)
+            target_sid, keys = self._resolve_xpath(xpath)
         except (KeyError, ValueError):
             return None
 
@@ -667,7 +667,7 @@ class CORECONFDatastore:
         
         return segments
 
-    def _resolve_path(self, xpath):
+    def _resolve_xpath(self, xpath):
         """
         Resolve XPath to (target_sid, key_values).
         
