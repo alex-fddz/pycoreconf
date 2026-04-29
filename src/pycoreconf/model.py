@@ -68,9 +68,215 @@ class CORECONFModel(ModelSID):
             sid_files = [sid_files]
         super().__init__(sid_files)
 
+    # Core API - Encoding
+    # --------------------------------------------------------------------------
+
+    def encode(self, config: dict) -> bytes:
+        """
+        Encode a Python dictionary config to CORECONF (CBOR).
+
+        Args:
+            config: Python dictionary with YANG identifier keys (e.g., "/example:greeting/message").
+
+        Returns:
+            CBOR-encoded bytes representing the CORECONF data.
+
+        Example:
+            - cbor_data = ccm.encode({"example:greeting/message": "Hello!"})
+        """
+
+        _logger.debug("Encoding config (keys=%d)", len(config))
+
+        # "deepcopy" to not modify the input
+        config_cpy = json.loads(json.dumps(config))
+
+        # Transform to CORECONF
+        sid_tree = self._identifier_to_sid_tree(config_cpy)
+        cbor_data = cbor.dumps(sid_tree)
+
+        _logger.debug("Encoding complete (bytes=%d)", len(cbor_data))
+
+        return cbor_data
+    
+    def encode_json(self, json_config: str) -> bytes:
+        """
+        Encode a JSON string or file to CORECONF (CBOR).
+
+        Args:
+            json_config: JSON string or path to a .json file.
+
+        Returns:
+            CBOR-encoded bytes representing the CORECONF data.
+
+        Example:
+            - cbor_data = ccm.encode_json('{"example:greeting/message":"Hello!"}')
+        """
+
+        config = self._load_json_input(json_config)
+
+        return self.encode(config)
+
+    # Core API - Decoding
+    # --------------------------------------------------------------------------
+
+    def decode(self, data: bytes, as_rfc7951: bool = False) -> dict:
+        """
+        Decode CORECONF (CBOR) data to a Python dictionary.
+
+        Args:
+            data: CBOR-encoded bytes.
+            as_rfc7951: If False (default), returns Python native types (int, float, bool).
+                        If True, returns RFC 7951-compliant types (e.g., int64 as string).
+
+        Returns:
+            Python dictionary with YANG identifier keys.
+
+        Example:
+            - cfg = ccm.decode(cbor_data)                   # native types
+            - cfg = ccm.decode(cbor_data, as_rfc7951=True)  # RFC 7951-compliant
+        """
+
+        _logger.debug("Decoding CBOR data (bytes=%d)", len(data))
+
+        data = cbor.loads(data)
+        config = self._sid_to_identifier_tree(data, use_native_types=(not as_rfc7951))
+
+        _logger.debug("Decoding complete (as_rfc7951=%s, keys=%d)", as_rfc7951, len(config))
+
+        return config
+
+    def decode_to_json(self, data: bytes) -> str:
+        """
+        Decode CORECONF (CBOR) data to a JSON string (RFC 7951-compliant).
+
+        Args:
+            data: CBOR-encoded bytes.
+
+        Returns:
+            JSON string with RFC 7951-compliant data types.
+
+        Example:
+            - json_str = ccm.decode_to_json(cbor_data)
+        """
+
+        config = self.decode(data=data, as_rfc7951=True)
+
+        # Return JSON-formatted string
+        return json.dumps(config)
+
+    # Datastores
+    # --------------------------------------------------------------------------
+
+    def create_datastore(self, data: dict = None):
+        """
+        Load an identifier-keyed dict into a high-level datastore interface.
+
+        Args:
+            data: Python dictionary with YANG identifier keys (e.g., {"example:greeting/message": "Hello!"})
+                  If None, creates an empty datastore.
+
+        Returns:
+            CORECONFDatastore instance for easy navigation and modification
+
+        Example:
+            ds = model.create_datastore({"example:greeting/message": "Hello!"})
+            value = ds["/measurements/measurement[type='solar-radiation'][id='0']/value"]
+            ds["/measurements/measurement[type='solar-radiation'][id='0']/value"] = 42
+        """
+
+        if data is None:
+            data = {}
+
+        # "deepcopy" to not modify the input
+        data_cpy = json.loads(json.dumps(data))
+
+        sid_tree = self._identifier_to_sid_tree(data_cpy)
+
+        return CORECONFDatastore(self, sid_tree)
+
+    def create_datastore_from_cbor(self, cbor_data: bytes):
+        """
+        Load CBOR data into a high-level datastore interface.
+
+        Args:
+            cbor_data: CBOR-encoded bytes (already in CORECONF/SID-keyed format)
+
+        Returns:
+            CORECONFDatastore instance for easy navigation and modification
+
+        Example:
+            ds = model.create_datastore_from_cbor(cbor_data)
+            value = ds["/measurements/measurement[type='solar-radiation'][id='0']/value"]
+        """
+
+        sid_tree = cbor.loads(cbor_data)
+
+        return CORECONFDatastore(self, sid_tree)
+
+    def create_datastore_from_json(self, json_config: str):
+        """
+        Load JSON data into a high-level datastore interface.
+
+        Args:
+            json_config: JSON string or path to a .json file with YANG identifier keys.
+
+        Returns:
+            CORECONFDatastore instance for easy navigation and modification
+
+        Example:
+            ds = model.create_datastore_from_json('{"example:greeting/message":"Hello!"}')
+            ds = model.create_datastore_from_json("config.json")
+        """
+
+        config = self._load_json_input(json_config)
+
+        return self.create_datastore(config)
+
+    # Validation
+    # --------------------------------------------------------------------------
+
+    def validate_json(self, json_config: str) -> None:
+        """
+        Validate a JSON config string or file against the YANG data model.
+
+        Args:
+            json_config: JSON string or path to file to validate.
+
+        Raises:
+            RuntimeError: If model_description_file is not set.
+            ImportError: If yangson package is not installed.
+            ConfigValidationError: If validation fails.
+
+        Example:
+            - ccm.validate_json('{"example:greeting/message":"Hello!"}')
+        """
+
+        if self.model_description_file is None:
+            raise RuntimeError("Model not configured for validation: missing model_description_file.")
+
+        try:
+            from yangson import DataModel
+        except ImportError:
+            raise ImportError("Validation requires 'yangson' package.")
+
+        config = self._load_json_input(json_config)
+
+        dm = DataModel.from_file(
+            self.model_description_file,
+            self.yang_ietf_modules_paths
+        )
+        data = dm.from_raw(config)
+
+        try:
+            data.validate()
+            _logger.info("Config validation passed")
+        except Exception as e:
+            # Add context and preserve the original exception chain
+            raise ConfigValidationError(f"Config validation failed: {e}") from e
+
     def add_modules_path(self, path: str | list[str]) -> None:
         """
-        Add a path or list of paths to YANG module dependencies.
+        Add a path or list of paths to YANG module used for config validation.
 
         Args:
             path: Path string or list of paths to YANG IETF modules directory.
@@ -86,6 +292,9 @@ class CORECONFModel(ModelSID):
             self.yang_ietf_modules_paths.extend(path)
         else:
             raise TypeError("Can only add path string or list of paths.")
+
+    # Internals
+    # --------------------------------------------------------------------------
 
     def _load_json_input(self, json_input):
         """Handle JSON string or file path input."""
@@ -220,44 +429,9 @@ class CORECONFModel(ModelSID):
         _logger.warning("Unrecognized type: %s; returning value as-is.", dtype)
         return leaf # fallback
 
-    def _identifier_to_sid_tree_recursive(self, obj, path="/", parent_sid=0):
-        """
-        Convert an identifier-keyed tree into a SID-keyed tree (recursive).
+    ## Tree Transformation (Encoding)
+    # --------------------------------------------------------------------------
 
-        Args:
-            obj: Current identifier-based tree.
-            path: Current identifier path.
-            parent_sid: Parent SID value.
-
-        Returns:
-            SID-keyed tree.
-        """
-
-        if type(obj) is dict:
-            sid_tree = {}
-            for k, v in obj.items():
-                node_path = path + k       # get full identifier path
-                key = self.sids[node_path] # look for SID value
-
-                value = self._identifier_to_sid_tree_recursive(v, node_path+"/", key)  # dive in
-
-                sid_tree[key - parent_sid] = value
-            return sid_tree
-
-        elif type(obj) is list:
-            sid_tree_list = []
-            for e in obj:   # get each element of the list
-                value = self._identifier_to_sid_tree_recursive(e, path, parent_sid)  # dive in
-                sid_tree_list.append(value)
-            return sid_tree_list
-
-        # Leaves:
-        else:
-            # get leaf data type according to model
-            # and cast to correct data type.
-            dtype = self.types[path[:-1]]
-            return self._convert_leaf_value(obj, dtype, to_cbor=True)
-            
     def _identifier_to_sid_tree(self, obj, path='/', parent_sid=0):
         """
         Convert an identifier-keyed tree into a SID-keyed tree (iterative).
@@ -304,128 +478,46 @@ class CORECONFModel(ModelSID):
         # Unwrap the ValueClass objects before returning
         return(_unwrap_values(obj))
 
-    def encode(self, config: dict) -> bytes:
+    def _identifier_to_sid_tree_recursive(self, obj, path="/", parent_sid=0):
         """
-        Encode a Python dictionary config to CORECONF (CBOR).
+        Convert an identifier-keyed tree into a SID-keyed tree (recursive).
 
         Args:
-            config: Python dictionary with YANG identifier keys (e.g., "/example:greeting/message").
-
-        Returns:
-            CBOR-encoded bytes representing the CORECONF data.
-
-        Example:
-            - cbor_data = ccm.encode({"example:greeting/message": "Hello!"})
-        """
-
-        _logger.debug("Encoding config (keys=%d)", len(config))
-
-        # "deepcopy" to not modify the input
-        config_cpy = json.loads(json.dumps(config))
-
-        # Transform to CORECONF
-        sid_tree = self._identifier_to_sid_tree(config_cpy)
-        cbor_data = cbor.dumps(sid_tree)
-
-        _logger.debug("Encoding complete (bytes=%d)", len(cbor_data))
-
-        return cbor_data
-    
-    def encode_json(self, json_config: str) -> bytes:
-        """
-        Encode a JSON string or file to CORECONF (CBOR).
-
-        Args:
-            json_config: JSON string or path to a .json file.
-
-        Returns:
-            CBOR-encoded bytes representing the CORECONF data.
-
-        Example:
-            - cbor_data = ccm.encode_json('{"example:greeting/message":"Hello!"}')
-        """
-
-        config = self._load_json_input(json_config)
-
-        return self.encode(config)
-
-    def toCORECONF(self, config):
-        """
-        Convert JSON data, file, or dict to CORECONF.
-        > DEPRECATED: Use encode() or encode_json().
-        """
-
-        warnings.warn(
-            "toCORECONF() is deprecated. Use encode() or encode_json() instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        # Work with a python dict
-        if isinstance(config, dict):
-            # "deepcopy"
-            cfg_dict = json.loads(json.dumps(config))
-        else:
-            if config[-5:] == ".json":
-                # Load the JSON file
-                with open(config, 'r') as f:
-                    cfg_dict = json.load(f)
-            else:
-                # Parse the JSON string
-                cfg_dict = json.loads(config)
-
-        # Attempt to validate the input config: python dict
-        try:
-            self._validate_config(cfg_dict)
-        except Exception as e:
-            # Add context and preserve the original exception chain
-            raise ConfigValidationError(f"Input config validation failed: {e}") from e
-
-        # Transform to CORECONF/CBOR
-        cc = self._identifier_to_sid_tree(cfg_dict)
-
-        return cbor.dumps(cc)
-
-    def _sid_to_identifier_tree_recursive(self, obj, sid_delta=0, path="/", use_native_types=True):
-        """
-        Convert a SID-keyed tree into an identifier-keyed tree (recursive).
-
-        Args:
-            obj: Current SID-based tree.
-            sid_delta: SID offset from parent.
+            obj: Current identifier-based tree.
             path: Current identifier path.
-            use_native_types: If True, use native Python types for leaf value conversion;
-                if False, use JSON-encoding of YANG data representation.
+            parent_sid: Parent SID value.
 
         Returns:
-            Identifier-keyed tree.
+            SID-keyed tree.
         """
 
         if type(obj) is dict:
-            identifier_tree = {}
+            sid_tree = {}
             for k, v in obj.items():
-                sid = k + sid_delta        # get full SID value
-                identifier = self.ids[sid] # look for identifier name
+                node_path = path + k       # get full identifier path
+                key = self.sids[node_path] # look for SID value
 
-                value = self._sid_to_identifier_tree_recursive(v, sid, identifier, use_native_types)    # dive in
+                value = self._identifier_to_sid_tree_recursive(v, node_path+"/", key)  # dive in
 
-                identifier_key = identifier[len(path):].lstrip("/")
-                identifier_tree[identifier_key] = value
-            return identifier_tree
+                sid_tree[key - parent_sid] = value
+            return sid_tree
 
         elif type(obj) is list:
-            identifier_tree_list = []
+            sid_tree_list = []
             for e in obj:   # get each element of the list
-                value = self._sid_to_identifier_tree_recursive(e, sid_delta, path, use_native_types)    # dive in
-                identifier_tree_list.append(value)
-            return identifier_tree_list
+                value = self._identifier_to_sid_tree_recursive(e, path, parent_sid)  # dive in
+                sid_tree_list.append(value)
+            return sid_tree_list
 
         # Leaves:
         else:
             # get leaf data type according to model
             # and cast to correct data type.
-            dtype = self.types[path]
-            return self._convert_leaf_value(obj, dtype, to_cbor=False, use_native_types=use_native_types)
+            dtype = self.types[path[:-1]]
+            return self._convert_leaf_value(obj, dtype, to_cbor=True)
+
+    ## Tree Transformation (Decoding)
+    # --------------------------------------------------------------------------
 
     def _sid_to_identifier_tree(self, obj, sid_delta=0, path='/', use_native_types=True):
         """
@@ -476,6 +568,50 @@ class CORECONFModel(ModelSID):
 
         # Unwrap the ValueClass objects before returning
         return(_unwrap_values(obj))
+
+    def _sid_to_identifier_tree_recursive(self, obj, sid_delta=0, path="/", use_native_types=True):
+        """
+        Convert a SID-keyed tree into an identifier-keyed tree (recursive).
+
+        Args:
+            obj: Current SID-based tree.
+            sid_delta: SID offset from parent.
+            path: Current identifier path.
+            use_native_types: If True, use native Python types for leaf value conversion;
+                if False, use JSON-encoding of YANG data representation.
+
+        Returns:
+            Identifier-keyed tree.
+        """
+
+        if type(obj) is dict:
+            identifier_tree = {}
+            for k, v in obj.items():
+                sid = k + sid_delta        # get full SID value
+                identifier = self.ids[sid] # look for identifier name
+
+                value = self._sid_to_identifier_tree_recursive(v, sid, identifier, use_native_types)    # dive in
+
+                identifier_key = identifier[len(path):].lstrip("/")
+                identifier_tree[identifier_key] = value
+            return identifier_tree
+
+        elif type(obj) is list:
+            identifier_tree_list = []
+            for e in obj:   # get each element of the list
+                value = self._sid_to_identifier_tree_recursive(e, sid_delta, path, use_native_types)    # dive in
+                identifier_tree_list.append(value)
+            return identifier_tree_list
+
+        # Leaves:
+        else:
+            # get leaf data type according to model
+            # and cast to correct data type.
+            dtype = self.types[path]
+            return self._convert_leaf_value(obj, dtype, to_cbor=False, use_native_types=use_native_types)
+
+    ## Query
+    # --------------------------------------------------------------------------
 
     def _execute_sid_query(self, obj, sid=None, keys=None, value=None, delta=0, path='/', depth=None):
         """
@@ -595,50 +731,45 @@ class CORECONFModel(ModelSID):
 
         return result
 
-    def decode(self, data: bytes, as_rfc7951: bool = False) -> dict:
+    # Deprecated
+    # --------------------------------------------------------------------------
+
+    def toCORECONF(self, config):
         """
-        Decode CORECONF (CBOR) data to a Python dictionary.
-
-        Args:
-            data: CBOR-encoded bytes.
-            as_rfc7951: If False (default), returns Python native types (int, float, bool).
-                        If True, returns RFC 7951-compliant types (e.g., int64 as string).
-
-        Returns:
-            Python dictionary with YANG identifier keys.
-
-        Example:
-            - cfg = ccm.decode(cbor_data)                   # native types
-            - cfg = ccm.decode(cbor_data, as_rfc7951=True)  # RFC 7951-compliant
+        Convert JSON data, file, or dict to CORECONF.
+        > DEPRECATED: Use encode() or encode_json().
         """
 
-        _logger.debug("Decoding CBOR data (bytes=%d)", len(data))
+        warnings.warn(
+            "toCORECONF() is deprecated. Use encode() or encode_json() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
-        data = cbor.loads(data)
-        config = self._sid_to_identifier_tree(data, use_native_types=(not as_rfc7951))
+        # Work with a python dict
+        if isinstance(config, dict):
+            # "deepcopy"
+            cfg_dict = json.loads(json.dumps(config))
+        else:
+            if config[-5:] == ".json":
+                # Load the JSON file
+                with open(config, 'r') as f:
+                    cfg_dict = json.load(f)
+            else:
+                # Parse the JSON string
+                cfg_dict = json.loads(config)
 
-        _logger.debug("Decoding complete (as_rfc7951=%s, keys=%d)", as_rfc7951, len(config))
+        # Attempt to validate the input config: python dict
+        try:
+            self._validate_config(cfg_dict)
+        except Exception as e:
+            # Add context and preserve the original exception chain
+            raise ConfigValidationError(f"Input config validation failed: {e}") from e
 
-        return config
+        # Transform to CORECONF/CBOR
+        cc = self._identifier_to_sid_tree(cfg_dict)
 
-    def decode_to_json(self, data: bytes) -> str:
-        """
-        Decode CORECONF (CBOR) data to a JSON string (RFC 7951-compliant).
-
-        Args:
-            data: CBOR-encoded bytes.
-
-        Returns:
-            JSON string with RFC 7951-compliant data types.
-
-        Example:
-            - json_str = ccm.decode_to_json(cbor_data)
-        """
-
-        config = self.decode(data=data, as_rfc7951=True)
-
-        # Return JSON-formatted string
-        return json.dumps(config)
+        return cbor.dumps(cc)
 
     def toJSON(self, cbor_data, return_pydict=False): 
         """
@@ -667,45 +798,6 @@ class CORECONFModel(ModelSID):
         # Return JSON obj / pyDict
         return pyd if return_pydict else json.dumps(pyd) 
 
-    def validate_json(self, json_config: str) -> None:
-        """
-        Validate a JSON config string or file against the YANG data model.
-
-        Args:
-            json_config: JSON string or path to file to validate.
-
-        Raises:
-            RuntimeError: If model_description_file is not set.
-            ImportError: If yangson package is not installed.
-            ConfigValidationError: If validation fails.
-
-        Example:
-            - ccm.validate_json('{"example:greeting/message":"Hello!"}')
-        """
-
-        if self.model_description_file is None:
-            raise RuntimeError("Model not configured for validation: missing model_description_file.")
-
-        try:
-            from yangson import DataModel
-        except ImportError:
-            raise ImportError("Validation requires 'yangson' package.")
-
-        config = self._load_json_input(json_config)
-
-        dm = DataModel.from_file(
-            self.model_description_file,
-            self.yang_ietf_modules_paths
-        )
-        data = dm.from_raw(config)
-
-        try:
-            data.validate()
-            _logger.info("Config validation passed")
-        except Exception as e:
-            # Add context and preserve the original exception chain
-            raise ConfigValidationError(f"Config validation failed: {e}") from e
-
     def _validate_config(self, config):
         """
         Validate Python dictionary config against the model.
@@ -733,68 +825,3 @@ class CORECONFModel(ModelSID):
         )
         data = dm.from_raw(config)
         data.validate()
-
-    def create_datastore(self, data: dict = None):
-        """
-        Load an identifier-keyed dict into a high-level datastore interface.
-
-        Args:
-            data: Python dictionary with YANG identifier keys (e.g., {"example:greeting/message": "Hello!"})
-                  If None, creates an empty datastore.
-
-        Returns:
-            CORECONFDatastore instance for easy navigation and modification
-
-        Example:
-            ds = model.create_datastore({"example:greeting/message": "Hello!"})
-            value = ds["/measurements/measurement[type='solar-radiation'][id='0']/value"]
-            ds["/measurements/measurement[type='solar-radiation'][id='0']/value"] = 42
-        """
-
-        if data is None:
-            data = {}
-
-        # "deepcopy" to not modify the input
-        data_cpy = json.loads(json.dumps(data))
-
-        sid_tree = self._identifier_to_sid_tree(data_cpy)
-
-        return CORECONFDatastore(self, sid_tree)
-
-    def create_datastore_from_cbor(self, cbor_data: bytes):
-        """
-        Load CBOR data into a high-level datastore interface.
-
-        Args:
-            cbor_data: CBOR-encoded bytes (already in CORECONF/SID-keyed format)
-
-        Returns:
-            CORECONFDatastore instance for easy navigation and modification
-
-        Example:
-            ds = model.create_datastore_from_cbor(cbor_data)
-            value = ds["/measurements/measurement[type='solar-radiation'][id='0']/value"]
-        """
-
-        sid_tree = cbor.loads(cbor_data)
-
-        return CORECONFDatastore(self, sid_tree)
-
-    def create_datastore_from_json(self, json_config: str):
-        """
-        Load JSON data into a high-level datastore interface.
-
-        Args:
-            json_config: JSON string or path to a .json file with YANG identifier keys.
-
-        Returns:
-            CORECONFDatastore instance for easy navigation and modification
-
-        Example:
-            ds = model.create_datastore_from_json('{"example:greeting/message":"Hello!"}')
-            ds = model.create_datastore_from_json("config.json")
-        """
-
-        config = self._load_json_input(json_config)
-
-        return self.create_datastore(config)
