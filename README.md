@@ -117,7 +117,7 @@ These methods return a `CORECONFDatastore` instance. See below for usage.
 - `create_datastore_from_json(json_config: str)` - Create datastore from JSON.
 - `create_datastore_from_cbor(cbor_data: bytes)` - Create datastore from CBOR.
 
-### `CORECONFDatastore`
+#### `CORECONFDatastore`
 
 Uses a simplified XPath-like syntax with predicates (`[key='value']`) for list entries.
 Supports standard Python operations (=, +=, del).

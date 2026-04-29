@@ -1,9 +1,24 @@
 # Changelog
 
-## [Unreleased]
+## [0.3.0] - 2026-04-29
+
+### Added
+- New serialization API
+  - `encode()` and `encode_json()` (formerly `toCORECONF()`)
+  - `decode()` and `decode_to_json()` (formerly `toJSON()`)
+- Datastore creation API with explicit input (dict, cbor, json)
+- Explicit validation method `validate_json()`
+- Use Python logging (replaces print statements)
+  - Deprecation warnings for legacy API
+  - Configurable log levels
 
 ### Changed
 - Migrated to pyproject.toml + src layout
+- API naming now follows snake_case consistently
+- Deprecated legacy serialization methods
+- `create_datastore()` now takes Python dict (canonical)
+- Validation is no longer implicit in serialization
+  - Now explicitly controlled via `validate_json()`
 
 ### Fixed
 - Dependency handling in config validation test
