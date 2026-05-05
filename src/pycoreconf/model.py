@@ -383,7 +383,14 @@ class CORECONFModel(ModelSID):
                 return str(leaf)
             elif dtype == "identityref": # sid <-> 'module:identity'
                 return self.sids[leaf] if to_cbor else self.ids[leaf]
-            elif dtype in ["empty", "leafref", "instance-identifier", "bits"]: # just return obj
+            elif dtype == "bits":
+                _logger.debug("Handling bits type as hex string")
+                # For bits type, convert bytes to hex string when decoding
+                if not to_cbor and isinstance(leaf, bytes):
+                    return leaf.hex()
+                else:
+                    return leaf
+            elif dtype in ["empty", "leafref", "instance-identifier"]: # just return obj
                 _logger.warning("Data type %s not yet handled; returning value as-is.", dtype)
                 return leaf
 
