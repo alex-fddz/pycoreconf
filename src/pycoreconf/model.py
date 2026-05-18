@@ -6,6 +6,7 @@ import json
 import base64
 import cbor2 as cbor
 import logging
+import copy
 import warnings
 
 _logger = logging.getLogger(__name__)
@@ -87,8 +88,7 @@ class CORECONFModel(ModelSID):
 
         _logger.debug("Encoding config (keys=%d)", len(config))
 
-        # "deepcopy" to not modify the input
-        config_cpy = json.loads(json.dumps(config))
+        config_cpy = cope.deepcopy(config)
 
         # Transform to CORECONF
         sid_tree = self._identifier_to_sid_tree(config_cpy)
@@ -187,8 +187,7 @@ class CORECONFModel(ModelSID):
         if data is None:
             data = {}
 
-        # "deepcopy" to not modify the input
-        data_cpy = json.loads(json.dumps(data))
+        data_cpy = copy.deepcopy(data)
 
         sid_tree = self._identifier_to_sid_tree(data_cpy)
 
@@ -755,8 +754,7 @@ class CORECONFModel(ModelSID):
 
         # Work with a python dict
         if isinstance(config, dict):
-            # "deepcopy"
-            cfg_dict = json.loads(json.dumps(config))
+            cfg_dict = copy.deepcopy(config)
         else:
             if config[-5:] == ".json":
                 # Load the JSON file
