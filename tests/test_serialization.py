@@ -85,6 +85,23 @@ class TestSerialization(unittest.TestCase):
         self.assertEqual(original, parsed)
         self.assertEqual(config, json_str)
     
+    def test_decode_to_json_null(self):
+        """Test decode_to_json returns null value for empty list"""
+        ccm = self.make_ccm("samples/libconf/example-2.sid")
+        config = '{"example-2:bag/foo": null}'
+
+        cbor_data = ccm.encode_json(config)
+        json_str = ccm.decode_to_json(cbor_data)
+
+        parsed = json.loads(json_str)
+        original = json.loads(config)
+
+        self.assertIsInstance(cbor_data, bytes)
+        self.assertIsInstance(json_str, str)
+
+        self.assertEqual(original, parsed)
+        self.assertEqual(config, json_str)
+
     def test_encode_json_invalid_json_raises(self):
         """Test encode_json with invalid JSON string."""
         ccm = self.make_ccm("samples/basic/example-1.sid")
