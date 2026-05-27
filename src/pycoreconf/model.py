@@ -88,7 +88,7 @@ class CORECONFModel(ModelSID):
 
         _logger.debug("Encoding config (keys=%d)", len(config))
 
-        config_cpy = cope.deepcopy(config)
+        config_cpy = copy.deepcopy(config)
 
         # Transform to CORECONF
         sid_tree = self._identifier_to_sid_tree(config_cpy)
