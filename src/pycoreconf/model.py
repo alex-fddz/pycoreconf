@@ -2,6 +2,7 @@
 
 from .sid import ModelSID
 from .datastore import CORECONFDatastore
+from typing import Union
 import json
 import base64
 import cbor2 as cbor
@@ -59,7 +60,7 @@ class CORECONFModel(ModelSID):
     """
 
     def __init__(self, 
-                 sid_files: list[str] | str, 
+                 sid_files: Union[list[str], str],
                  model_description_file: str = None):
         
         self.model_description_file = model_description_file
@@ -273,7 +274,7 @@ class CORECONFModel(ModelSID):
             # Add context and preserve the original exception chain
             raise ConfigValidationError(f"Config validation failed: {e}") from e
 
-    def add_modules_path(self, path: str | list[str]) -> None:
+    def add_modules_path(self, path: Union[str, list[str]]) -> None:
         """
         Add a path or list of paths to YANG module used for config validation.
 

@@ -7,7 +7,7 @@ name = "pycoreconf"
 version = "0.3.0"
 description = "open-source implementation of CORECONF (CoAP Management Interface)"
 readme = "README.md"
-requires-python = ">=3.7, <4"
+requires-python = ">=3.9, <4"
 authors = [
     { name = "Javier A. Fernandez", email = "javier.fddz@gmail.com" }
 ]
