@@ -83,7 +83,7 @@ class CORECONFDatastore:
                 
                 value_copy = copy.deepcopy(value)
                 wrapped = {parent_sid: value_copy}
-                self.model._sid_to_identifier_tree(wrapped, sid_delta=0, path=parent_parent_path)
+                self.model.sid_to_identifier_tree(wrapped, sid_delta=0, path=parent_parent_path)
                 
                 node_identifier = parent_path.split('/')[-1]
                 entry = wrapped.get(node_identifier, value_copy)
@@ -114,7 +114,7 @@ class CORECONFDatastore:
         
         # Create wrapped structure and convert
         wrapped = {target_sid: value_copy}
-        self.model._sid_to_identifier_tree(wrapped, sid_delta=0, path=parent_path)
+        self.model.sid_to_identifier_tree(wrapped, sid_delta=0, path=parent_path)
         
         # Extract converted value
         node_identifier = target_path.split('/')[-1]

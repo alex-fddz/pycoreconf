@@ -92,7 +92,7 @@ class CORECONFModel(ModelSID):
         config_cpy = copy.deepcopy(config)
 
         # Transform to CORECONF
-        sid_tree = self._identifier_to_sid_tree(config_cpy)
+        sid_tree = self.identifier_to_sid_tree(config_cpy)
         cbor_data = cbor.dumps(sid_tree)
 
         _logger.debug("Encoding complete (bytes=%d)", len(cbor_data))
@@ -140,7 +140,7 @@ class CORECONFModel(ModelSID):
         _logger.debug("Decoding CBOR data (bytes=%d)", len(data))
 
         data = cbor.loads(data)
-        config = self._sid_to_identifier_tree(data, use_native_types=(not as_rfc7951))
+        config = self.sid_to_identifier_tree(data, use_native_types=(not as_rfc7951))
 
         _logger.debug("Decoding complete (as_rfc7951=%s, keys=%d)", as_rfc7951, len(config))
 
@@ -190,7 +190,7 @@ class CORECONFModel(ModelSID):
 
         data_cpy = copy.deepcopy(data)
 
-        sid_tree = self._identifier_to_sid_tree(data_cpy)
+        sid_tree = self.identifier_to_sid_tree(data_cpy)
 
         return CORECONFDatastore(self, sid_tree)
 
@@ -439,7 +439,7 @@ class CORECONFModel(ModelSID):
     ## Tree Transformation (Encoding)
     # --------------------------------------------------------------------------
 
-    def _identifier_to_sid_tree(self, obj, path='/', parent_sid=0):
+    def identifier_to_sid_tree(self, obj, path='/', parent_sid=0):
         """
         Convert an identifier-keyed tree into a SID-keyed tree (iterative).
 
@@ -530,7 +530,7 @@ class CORECONFModel(ModelSID):
     ## Tree Transformation (Decoding)
     # --------------------------------------------------------------------------
 
-    def _sid_to_identifier_tree(self, obj, sid_delta=0, path='/', use_native_types=True):
+    def sid_to_identifier_tree(self, obj, sid_delta=0, path='/', use_native_types=True):
         """
         Convert a SID-keyed tree into an identifier-keyed tree (iterative).
 
@@ -783,7 +783,7 @@ class CORECONFModel(ModelSID):
             raise ConfigValidationError(f"Input config validation failed: {e}") from e
 
         # Transform to CORECONF/CBOR
-        cc = self._identifier_to_sid_tree(cfg_dict)
+        cc = self.identifier_to_sid_tree(cfg_dict)
 
         return cbor.dumps(cc)
 
@@ -800,7 +800,7 @@ class CORECONFModel(ModelSID):
         )
 
         data = cbor.loads(cbor_data)
-        pyd = self._sid_to_identifier_tree(data, use_native_types=return_pydict)
+        pyd = self.sid_to_identifier_tree(data, use_native_types=return_pydict)
 
         # Attempt to validate the output config
         try:
