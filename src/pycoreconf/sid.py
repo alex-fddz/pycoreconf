@@ -23,7 +23,7 @@ class ModelSID:
 
     def __init__(self, sid_files: list[str]):
         self.sid_files = sid_files # .sid file paths
-        self.sids, self.types, self.key_mapping = self._collect_sid_data() #req. ltn22/pyang
+        self.sids, self.types, self.key_mapping, self.namespace = self._collect_sid_data() #req. ltn22/pyang
         self.ids = {v: k for k, v in self.sids.items()} # {sid:id}
 
     def _parse_sid_file(self, sid_filename: str) -> tuple:
@@ -85,6 +85,7 @@ class ModelSID:
         sids = {}
         types = {}
         key_mapping = {}
+        namespace = {}
 
         for sid_filename in self.sid_files:
             
@@ -103,6 +104,7 @@ class ModelSID:
                 if "type" in item.keys():
                     types[item["identifier"]] = item["type"]
 
+                namespace[item["identifier"]] = item["namespace"]
                 key_mapping.update(km)
 
             # Save module name & ranges = {'module-name': [(start, end)], ...} ?
@@ -118,4 +120,4 @@ class ModelSID:
             len(self.sid_files), len(sids), len(types), len(key_mapping)
         )
             
-        return sids, types, key_mapping
+        return sids, types, key_mapping, namespace
