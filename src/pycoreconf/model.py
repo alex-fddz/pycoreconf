@@ -2,6 +2,7 @@
 
 from .sid import ModelSID
 from .datastore import CORECONFDatastore
+from decimal import Decimal
 from typing import Union
 import json
 import base64
@@ -326,6 +327,7 @@ class CORECONFModel(ModelSID):
 
         # XXX: Refactor and/or split (encoding/decoding) this function.
 
+        DECIMAL_FRACTION_CBOR_TAG_VALUE = 4
         BITS_CBOR_TAG_VALUE = 43
         ENUMERATION_CBOR_TAG_VALUE = 44
         IDENTITYREF_CBOR_TAG_VALUE = 45
@@ -390,6 +392,13 @@ class CORECONFModel(ModelSID):
                     return leaf.hex()
                 else:
                     return leaf
+            elif dtype == "ieee802-eth-if:eth-if-speed-type":
+                # When encoding this to cbor we want to use the appropriate
+                # CBOR decimal fraction tag, and cbor2 does that with the
+                # Decimal data type
+                if to_cbor:
+                    return Decimal(leaf)
+
             elif dtype in ["empty", "leafref", "instance-identifier"]: # just return obj
                 _logger.warning("Data type %s not yet handled; returning value as-is.", dtype)
                 return leaf
@@ -428,7 +437,6 @@ class CORECONFModel(ModelSID):
         # RFC 7951: Fallback for Decimal objects (e.g., from unrecognized typedefs)
         # Decimal values must be strings in JSON to maintain precision
         if not to_cbor and not use_native_types:
-            from decimal import Decimal
             if isinstance(leaf, Decimal):
                 _logger.debug("Converting Decimal to string for JSON compatibility (value=%r)", leaf)
                 return str(leaf)
